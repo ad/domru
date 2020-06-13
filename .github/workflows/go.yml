@@ -1,0 +1,42 @@
+name: Release on commit or tag
+on:
+  push:
+    branches:
+    - master
+    - release/*
+  create:
+    tags:
+      - v*
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+
+      - name: Check out source code
+        uses: actions/checkout@master
+
+      - name: Build OS X binary
+        run: GOOS=darwin GOARCH=amd64 go build -o $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2)-darwin64 -a -ldflags '-s -w' .
+        
+      - name: Build Linux binary
+        run: GOOS=linux GOARCH=amd64 go build -o $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2)-linux64 -a -ldflags '-s -w' .
+     
+      - name: Build ARM binary
+        run: GOOS=linux GOARCH=arm GOARM=6 go build -o $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2)-arm -a -ldflags '-s -w' .
+        
+      - name: Build windows binary
+        run: GOOS=windows GOARCH=amd64 go build -o $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2).exe -a -ldflags '-s -w' .
+        
+      - name: Install olsu
+        run: wget https://github.com/Telling/olsu/releases/download/v0.1.0/olsu-linux-amd64.zip && unzip olsu-linux-amd64.zip && chmod +x olsu-linux-amd64 && pwd && ls -la
+        
+      - name: Create or update release
+        env:
+          OLSU_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OLSU_DELETE_RELEASE: yes
+        run: ./olsu-linux-amd64 -o $(echo $GITHUB_REPOSITORY | cut -d "/" -f 1) -r $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2) "Latest release" "latest" "Automatic release" $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2)-darwin64 $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2)-linux64 $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2)-arm # $(echo $GITHUB_REPOSITORY | cut -d "/" -f 2).exe

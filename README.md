@@ -1,7 +1,7 @@
 <br/>
 <p align="center">
     <a href="https://github.com/ad/domru/blob/master/LICENSE" target="_blank">
-        <img src="https://img.shields.io/github/license/ad/domru?style=plastic" alt="GitHub license">
+        <img src="https://img.shields.io/github/license/ad/domru" alt="GitHub license">
     </a>
     <a href="https://github.com/ad/domru/actions" target="_blank">
         <img src="https://github.com/ad/domru/workflows/Release%20on%20commit%20or%20tag/badge.svg" alt="GitHub actions status">

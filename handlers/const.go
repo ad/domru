@@ -1,4 +1,4 @@
-package main
+package handlers
 
 const (
 	API_AUTH              = "https://api-auth.domru.ru/v1/person/auth"

@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"bytes"
@@ -12,15 +12,17 @@ import (
 	"strings"
 )
 
-func auth(username, password string) (string, error) {
+// Auth ...
+func (h *Handler) Auth(username, password *string) (string, error) {
 	var (
 		err      error
 		respBody []byte
 		body     bytes.Buffer
+		client   = h.Client
 
 		values = map[string]io.Reader{
-			"username":   strings.NewReader(username),
-			"password":   strings.NewReader(password),
+			"username":   strings.NewReader(*username),
+			"password":   strings.NewReader(*password),
 			"rememberMe": strings.NewReader("1"),
 		}
 	)
@@ -65,7 +67,7 @@ func auth(username, password string) (string, error) {
 		defer req.Body.Close()
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -96,10 +98,11 @@ func auth(username, password string) (string, error) {
 	return authResp.Data.AccessToken, nil
 }
 
-func authHandler(w http.ResponseWriter, r *http.Request) {
+// AuthHandler ...
+func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/authHandler")
 
-	data, err := auth(*login, *password)
+	data, err := h.Auth(h.Login, h.Password)
 	if err != nil {
 		log.Println("authHandler", err.Error())
 	}

@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"bytes"
@@ -9,10 +9,12 @@ import (
 	"net/http"
 )
 
-func door() (string, error) {
+// Door ...
+func (h *Handler) Door() (string, error) {
 	var (
-		body []byte
-		err  error
+		body   []byte
+		err    error
+		client = h.Client
 	)
 
 	type doorData struct {
@@ -30,8 +32,8 @@ func door() (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", operator)
-	rt.Set("Authorization", "Bearer "+*token)
+	rt.Set("Operator", *h.Operator)
+	rt.Set("Authorization", "Bearer "+*h.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
@@ -53,10 +55,11 @@ func door() (string, error) {
 	return string(body), nil
 }
 
-func doorHandler(w http.ResponseWriter, r *http.Request) {
+// DoorHandler ...
+func (h *Handler) DoorHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/doorHandler")
 
-	data, err := door()
+	data, err := h.Door()
 	if err != nil {
 		data = err.Error()
 		log.Println("doorHandler", err.Error())

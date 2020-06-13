@@ -15,3 +15,5 @@
 # vendor/
 domru
 deploy.sh
+
+.DS_Store

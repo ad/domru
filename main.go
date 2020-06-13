@@ -4,6 +4,8 @@ import (
 	"flag"
 	"log"
 	"net/http"
+
+	"github.com/ad/domru/handlers"
 )
 
 var (
@@ -12,7 +14,7 @@ var (
 	refreshToken *string
 	login        *string
 	password     *string
-	operator     = "2"
+	operator     *string
 
 	client = http.DefaultClient
 )
@@ -23,20 +25,23 @@ func main() {
 	refreshToken = flag.String("reshresh", "", "dom.ru refresh token")
 	login = flag.String("login", "", "dom.ru login")
 	password = flag.String("password", "", "dom.ru password")
+	operator = flag.String("operator", "2", "dom.ru operator")
 	flag.Parse()
+
+	h := handlers.NewHandlers(addr, token, refreshToken, login, password, operator)
 
 	if *token != "" || *refreshToken != "" {
 		if *refreshToken != "" {
-			data, err := refresh(refreshToken)
+			data, err := h.Refresh(h.RefreshToken)
 			if err != nil {
 				data = err.Error()
 				log.Println("refresh token, error:", err.Error())
 			} else {
-				token = &data
+				h.Token = &data
 			}
 		}
 	} else if *login != "" && *password != "" {
-		data, err := auth(*login, *password)
+		data, err := h.Auth(h.Login, h.Password)
 		if err != nil {
 			log.Println("login error", err.Error())
 		} else {
@@ -46,42 +51,18 @@ func main() {
 		log.Fatal("auth/refresh token or login and password must be provided")
 	}
 
-	http.HandleFunc("/cameras", camerasHandler)
-	http.HandleFunc("/door", doorHandler)
-	http.HandleFunc("/finances", financesHandler)
-	http.HandleFunc("/places", placesHandler)
-	http.HandleFunc("/snapshot", snapshotHandler)
-	http.HandleFunc("/stream", streamHandler)
-	http.HandleFunc("/token", tokenHandler)
-	http.HandleFunc("/auth", authHandler)
+	http.HandleFunc("/cameras", h.CamerasHandler)
+	http.HandleFunc("/door", h.DoorHandler)
+	http.HandleFunc("/finances", h.FinancesHandler)
+	http.HandleFunc("/places", h.PlacesHandler)
+	http.HandleFunc("/snapshot", h.SnapshotHandler)
+	http.HandleFunc("/stream", h.StreamHandler)
+	http.HandleFunc("/token", h.TokenHandler)
+	http.HandleFunc("/auth", h.AuthHandler)
 
 	log.Println("start listening on", *addr, "with token", *token)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
-}
-
-// Header ...
-type Header struct {
-	http.Header
-	rt http.RoundTripper
-}
-
-// WithHeader ...
-func WithHeader(rt http.RoundTripper) Header {
-	if rt == nil {
-		rt = http.DefaultTransport
-	}
-
-	return Header{Header: make(http.Header), rt: rt}
-}
-
-// RoundTrip ...
-func (h Header) RoundTrip(req *http.Request) (*http.Response, error) {
-	for k, v := range h.Header {
-		req.Header[k] = v
-	}
-
-	return h.rt.RoundTrip(req)
 }

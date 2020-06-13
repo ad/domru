@@ -1,57 +1,58 @@
-package main
+package handlers
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
-func stream() ([]byte, error) {
+// Finances ...
+func (h *Handler) Finances() (string, error) {
 	var (
-		body []byte
-		err  error
+		body   []byte
+		err    error
+		client = h.Client
 	)
 
-	url := fmt.Sprintf(API_CAMERA_GET_STREAM, 284945)
+	url := API_FINANCES
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return body, err
+		return "", err
 	}
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", operator)
-	rt.Set("Authorization", "Bearer "+*token)
+	rt.Set("Operator", *h.Operator)
+	rt.Set("Authorization", "Bearer "+*h.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
 	if err != nil {
-		return body, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 409 {
+	if resp.StatusCode == 409 { // Conflict (tokent already expired)
 		body = []byte("token can't be refreshed")
 	}
 
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
-		return body, err
+		return "", err
 	}
 
-	return body, nil
+	return string(body), nil
 }
 
-func streamHandler(w http.ResponseWriter, r *http.Request) {
+// FinancesHandler ...
+func (h *Handler) FinancesHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/financesHandler")
 
-	data, err := stream()
+	data, err := h.Finances()
 	if err != nil {
-		data = []byte(err.Error())
+		data = err.Error()
 		log.Println("financesHandler", err.Error())
 	}
-
-	if _, err := w.Write(data); err != nil {
+	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("financesHandler", err.Error())
 	}
 }

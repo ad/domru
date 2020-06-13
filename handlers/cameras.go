@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"io/ioutil"
@@ -6,10 +6,12 @@ import (
 	"net/http"
 )
 
-func cameras() (string, error) {
+// Cameras ...
+func (h *Handler) Cameras() (string, error) {
 	var (
-		body []byte
-		err  error
+		body   []byte
+		err    error
+		client = h.Client
 	)
 
 	url := API_CAMERAS
@@ -20,8 +22,8 @@ func cameras() (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", operator)
-	rt.Set("Authorization", "Bearer "+*token)
+	rt.Set("Operator", *h.Operator)
+	rt.Set("Authorization", "Bearer "+*h.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
@@ -43,10 +45,11 @@ func cameras() (string, error) {
 	return string(body), nil
 }
 
-func camerasHandler(w http.ResponseWriter, r *http.Request) {
+// CamerasHandler ...
+func (h *Handler) CamerasHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/camerasHandler")
 
-	data, err := cameras()
+	data, err := h.Cameras()
 	if err != nil {
 		log.Println("camerasHandler", err.Error())
 	}

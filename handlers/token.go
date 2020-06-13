@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"io/ioutil"
@@ -6,13 +6,15 @@ import (
 	"net/http"
 )
 
-func finances() (string, error) {
+// Refresh ...
+func (h *Handler) Refresh(refreshToken *string) (string, error) {
 	var (
-		body []byte
-		err  error
+		body   []byte
+		err    error
+		client = h.Client
 	)
 
-	url := API_FINANCES
+	url := API_REFRESH_SESSION
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -20,8 +22,8 @@ func finances() (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", operator)
-	rt.Set("Authorization", "Bearer "+*token)
+	rt.Set("Operator", *h.Operator)
+	rt.Set("Bearer", *h.RefreshToken)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
@@ -29,6 +31,8 @@ func finances() (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
+
+	log.Printf("%#v", resp)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
 		body = []byte("token can't be refreshed")
@@ -41,15 +45,19 @@ func finances() (string, error) {
 	return string(body), nil
 }
 
-func financesHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/financesHandler")
+// TokenHandler ...
+func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("/token")
 
-	data, err := finances()
+	data, err := h.Refresh(h.RefreshToken)
 	if err != nil {
 		data = err.Error()
-		log.Println("financesHandler", err.Error())
+		log.Println("tokenHandler", err.Error())
+	} else {
+		h.Token = &data
 	}
+
 	if _, err := w.Write([]byte(data)); err != nil {
-		log.Println("financesHandler", err.Error())
+		log.Println("tokenHandler", err.Error())
 	}
 }

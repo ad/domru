@@ -1,4 +1,4 @@
-name: Release on commit or tag
+name: Release
 on:
   push:
     branches:

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,11 +9,12 @@ import (
 )
 
 // Stream ...
-func (h *Handler) Stream(r *http.Request) ([]byte, error) {
+func (h *Handler) Stream(r *http.Request) (string, error) {
 	var (
-		body   []byte
-		err    error
-		client = h.Client
+		body     string
+		respBody []byte
+		err      error
+		client   = h.Client
 	)
 
 	query := r.URL.Query()
@@ -38,14 +40,26 @@ func (h *Handler) Stream(r *http.Request) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 409 {
-		body = []byte("token can't be refreshed")
+		body = "token can't be refreshed"
 	}
 
-	if body, err = ioutil.ReadAll(resp.Body); err != nil {
-		return body, err
+	if respBody, err = ioutil.ReadAll(resp.Body); err != nil {
+		return string(respBody), err
 	}
 
-	return body, nil
+	type streamResponse struct {
+		Data struct {
+			URL string `json:"URL"`
+		} `json:"data"`
+	}
+
+	var streamResp streamResponse
+	err = json.Unmarshal(respBody, &streamResp)
+	if err != nil {
+		return "", fmt.Errorf("Json parse error: %s", err)
+	}
+
+	return streamResp.Data.URL, nil
 }
 
 // StreamHandler ...
@@ -54,11 +68,11 @@ func (h *Handler) StreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := h.Stream(r)
 	if err != nil {
-		data = []byte(err.Error())
+		data = err.Error()
 		log.Println("streamHandler", err.Error())
 	}
 
-	if _, err := w.Write(data); err != nil {
+	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("streamHandler", err.Error())
 	}
 }

@@ -10,8 +10,6 @@ import (
 
 // SnapshotHandler ...
 func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/snapshotHandler")
-
 	var (
 		body   []byte
 		err    error
@@ -23,6 +21,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	accessControlID := query.Get("accessControlID")
 
 	url := fmt.Sprintf(API_VIDEO_SNAPSHOT, placeID, accessControlID)
+	log.Println("/snapshotHandler", url)
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -43,7 +42,10 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 	body, err = ioutil.ReadAll(resp.Body)
 
-	w.Header().Set("Content-Type", "image/jpeg")
+	if resp.StatusCode == 200 {
+		w.Header().Set("Content-Type", "image/jpeg")
+	}
+
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	if _, err := w.Write(body); err != nil {
 		log.Println("snapshotHandler", "unable to write image.")

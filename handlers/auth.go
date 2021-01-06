@@ -95,6 +95,9 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 		return "", fmt.Errorf("Json parse error: %s", err)
 	}
 
+	h.Token = &authResp.Data.AccessToken
+	h.RefreshToken = &authResp.Data.RefreshToken
+
 	return authResp.Data.AccessToken, nil
 }
 

@@ -70,9 +70,12 @@ func (h *Handler) StreamHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		data = err.Error()
 		log.Println("streamHandler", err.Error())
+
+		if _, err := w.Write([]byte(data)); err != nil {
+			log.Println("streamHandler", err.Error())
+		}
+		return
 	}
 
-	if _, err := w.Write([]byte(data)); err != nil {
-		log.Println("streamHandler", err.Error())
-	}
+	http.Redirect(w, r, data, http.StatusFound)
 }

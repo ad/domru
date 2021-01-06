@@ -10,7 +10,7 @@ import (
 )
 
 // Door ...
-func (h *Handler) Door() (string, error) {
+func (h *Handler) Door(r *http.Request) (string, error) {
 	var (
 		body   []byte
 		err    error
@@ -24,7 +24,12 @@ func (h *Handler) Door() (string, error) {
 	buf := new(bytes.Buffer)
 	json.NewEncoder(buf).Encode(&doorData{Name: "accessControlOpen"})
 
-	url := fmt.Sprintf(API_OPEN_DOOR, 936129, 5351)
+	query := r.URL.Query()
+	placeID := query.Get("placeID")
+	accessControlID := query.Get("accessControlID")
+
+	url := fmt.Sprintf(API_OPEN_DOOR, placeID, accessControlID)
+
 	request, err := http.NewRequest("POST", url, buf)
 	if err != nil {
 		return "", err
@@ -59,7 +64,7 @@ func (h *Handler) Door() (string, error) {
 func (h *Handler) DoorHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/doorHandler")
 
-	data, err := h.Door()
+	data, err := h.Door(r)
 	if err != nil {
 		data = err.Error()
 		log.Println("doorHandler", err.Error())

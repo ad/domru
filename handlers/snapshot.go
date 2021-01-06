@@ -18,7 +18,12 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		client = h.Client
 	)
 
-	url := fmt.Sprintf(API_VIDEO_SNAPSHOT, 936129, 5351)
+	query := r.URL.Query()
+	placeID := query.Get("placeID")
+	accessControlID := query.Get("accessControlID")
+
+	url := fmt.Sprintf(API_VIDEO_SNAPSHOT, placeID, accessControlID)
+
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Println("snapshotHandler", err)

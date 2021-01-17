@@ -52,13 +52,13 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		if resp.StatusCode != 200 {
 			err = fmt.Errorf("wrong response, code: %d, result: %s", resp.StatusCode, string(body))
 		} else if contentType != "image/jpeg" {
-			err = fmt.Errorf("wrong response, code: %d, Content-Type: %s", resp.StatusCode, contentType)
+			err = fmt.Errorf("wrong response, code: %d, Content-Type: %s, result: %s", resp.StatusCode, contentType, string(body))
 		}
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
 
-	if resp.StatusCode != 200  {
+	if err != nil  {
 		width := 500
 		height := 281
 

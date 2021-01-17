@@ -65,8 +65,8 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		height := 281
 
 	    dc := gg.NewContext(width, height)
-		font, err := truetype.Parse(goregular.TTF)
-		if err == nil {
+		font, errParse := truetype.Parse(goregular.TTF)
+		if errParse == nil {
 			face := truetype.NewFace(font, &truetype.Options{Size: 16})
 	    	dc.SetFontFace(face)
 		}
@@ -86,7 +86,6 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	    	gg.AlignCenter, 	 // align
 	    )
 	    dc.Clip()
-	    dc.SavePNG("out.png")
 
 	    b := bytes.Buffer{}
 	    var opt jpeg.Options
@@ -98,7 +97,9 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Write(b.Bytes())
+		if _, err := w.Write(b.Bytes()); err != nil {
+			log.Println("snapshotHandler", "unable to write image.")
+		}
 
 		return
 	}

@@ -10,6 +10,8 @@ import (
     jpeg "image/jpeg"
 
     "github.com/fogleman/gg"
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font/gofont/goregular"
 )
 
 // SnapshotHandler ...
@@ -63,6 +65,12 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		height := 281
 
 	    dc := gg.NewContext(width, height)
+		font, err := truetype.Parse(goregular.TTF)
+		if err == nil {
+			face := truetype.NewFace(font, &truetype.Options{Size: 16})
+	    	dc.SetFontFace(face)
+		}
+		
 	    dc.SetHexColor("#000000")
 	    dc.DrawRectangle(0, 0, float64(width), float64(height))
 	    dc.Fill()

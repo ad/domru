@@ -9,4 +9,6 @@ const (
 	API_VIDEO_SNAPSHOT    = "https://myhome.novotelecom.ru/rest/v1/places/%s/accesscontrols/%s/videosnapshots"
 	API_CAMERA_GET_STREAM = "https://myhome.novotelecom.ru/rest/v1/forpost/cameras/%s/video?&LightStream=0"
 	API_REFRESH_SESSION   = "https://myhome.novotelecom.ru/auth/v2/session/refresh"
+	API_EVENTS            = "https://myhome.novotelecom.ru/rest/v1/places/%s/events?allowExtentedActions=true"
+	API_OPERATORS         = "https://myhome.novotelecom.ru/public/v1/operators"
 )

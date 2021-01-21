@@ -46,12 +46,14 @@ func main() {
 			token = &data
 		}
 	} else {
-		log.Fatal("auth/refresh token or login and password must be provided")
+		panic("auth/refresh token or login and password must be provided")
 	}
 
 	http.HandleFunc("/cameras", h.CamerasHandler)
 	http.HandleFunc("/door", h.DoorHandler)
+	http.HandleFunc("/events", h.EventsHandler)
 	http.HandleFunc("/finances", h.FinancesHandler)
+	http.HandleFunc("/operators", h.OperatorsHandler)
 	http.HandleFunc("/places", h.PlacesHandler)
 	http.HandleFunc("/snapshot", h.SnapshotHandler)
 	http.HandleFunc("/stream", h.StreamHandler)
@@ -61,6 +63,6 @@ func main() {
 	log.Println("start listening on", *addr, "with token", *token)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
-		log.Fatal("ListenAndServe:", err)
+		panic("ListenAndServe: " + err.Error())
 	}
 }

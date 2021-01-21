@@ -53,6 +53,9 @@ func (h *Handler) CamerasHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("camerasHandler", err.Error())
 	}
+	
+	w.Header().Set("Content-Type", "application/json")
+
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("camerasHandler", err.Error())
 	}

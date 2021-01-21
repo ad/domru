@@ -54,6 +54,9 @@ func (h *Handler) PlacesHandler(w http.ResponseWriter, r *http.Request) {
 		data = err.Error()
 		log.Println("placesHandler", err.Error())
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("placesHandler", err.Error())
 	}

@@ -57,6 +57,8 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		h.Token = &data
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("tokenHandler", err.Error())
 	}

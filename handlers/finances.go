@@ -52,6 +52,9 @@ func (h *Handler) FinancesHandler(w http.ResponseWriter, r *http.Request) {
 		data = err.Error()
 		log.Println("financesHandler", err.Error())
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("financesHandler", err.Error())
 	}

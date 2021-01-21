@@ -46,7 +46,7 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 
 	err = writer.Close()
 	if err != nil {
-		return "", fmt.Errorf("writerClose: %v", err)
+		return "", fmt.Errorf("writerClose: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", API_AUTH, &body)
@@ -92,7 +92,7 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 	var authResp authResponse
 	err = json.Unmarshal(respBody, &authResp)
 	if err != nil {
-		return "", fmt.Errorf("Json parse error: %s", err)
+		return "", fmt.Errorf("Json parse error: %w", err)
 	}
 
 	h.Token = &authResp.Data.AccessToken
@@ -109,6 +109,9 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("authHandler", err.Error())
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("authHandler", err.Error())
 	}

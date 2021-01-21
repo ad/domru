@@ -15,8 +15,6 @@ var (
 	login        *string
 	password     *string
 	operator     *string
-
-	client = http.DefaultClient
 )
 
 func main() {
@@ -25,7 +23,7 @@ func main() {
 	refreshToken = flag.String("reshresh", "", "dom.ru refresh token")
 	login = flag.String("login", "", "dom.ru login")
 	password = flag.String("password", "", "dom.ru password")
-	operator = flag.String("operator", "2", "dom.ru operator")
+	operator = flag.String("operator", "", "dom.ru operator")
 	flag.Parse()
 
 	h := handlers.NewHandlers(addr, token, refreshToken, login, password, operator)

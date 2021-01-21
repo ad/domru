@@ -50,7 +50,7 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 	log.Printf("%#v", resp)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
-		body = []byte("token can't be refreshed")
+		return "token can't be refreshed", nil
 	}
 
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
@@ -69,6 +69,9 @@ func (h *Handler) DoorHandler(w http.ResponseWriter, r *http.Request) {
 		data = err.Error()
 		log.Println("doorHandler", err.Error())
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("doorHandler", err.Error())
 	}

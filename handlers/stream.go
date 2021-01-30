@@ -29,8 +29,8 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", *h.Operator)
-	rt.Set("Authorization", "Bearer "+*h.Token)
+	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
@@ -40,7 +40,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 409 {
-		body = "token can't be refreshed"
+		return "token can't be refreshed", nil
 	}
 
 	if respBody, err = ioutil.ReadAll(resp.Body); err != nil {
@@ -56,7 +56,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	var streamResp streamResponse
 	err = json.Unmarshal(respBody, &streamResp)
 	if err != nil {
-		return "", fmt.Errorf("Json parse error: %s", err)
+		return "", fmt.Errorf("Json parse error: %w", err)
 	}
 
 	return streamResp.Data.URL, nil

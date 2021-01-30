@@ -17,8 +17,16 @@ go get -u github.com/ad/domru
 ```
 
 ```shell
-domru -login=1234567890 -password=qwerty
+domru -login=1234567890 -password=qwerty -operator=2
 ```
+
+## 🚀&nbsp; Or Docker
+```shell
+docker build -t ad/domru:latest .
+docker run --name domru --rm -p 8080:8080 DOMRU_LOGIN=1234567890 -e DOMRU_PASSWORD=qwerty -e DOMRU_OPERATOR=2 ad/domru:latest
+```
+
+
 And open in browser http://localhost:8080/snapshot
 
 ## 🤝&nbsp; Found a bug? Missing a specific feature?

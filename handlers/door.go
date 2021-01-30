@@ -37,8 +37,8 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", *h.Operator)
-	rt.Set("Authorization", "Bearer "+*h.Token)
+	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)

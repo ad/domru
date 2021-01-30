@@ -22,8 +22,8 @@ func (h *Handler) Refresh(refreshToken *string) (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", *h.Operator)
-	rt.Set("Bearer", *h.RefreshToken)
+	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Bearer", h.Config.RefreshToken)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
@@ -35,7 +35,7 @@ func (h *Handler) Refresh(refreshToken *string) (string, error) {
 	log.Printf("%#v", resp)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
-		body = []byte("token can't be refreshed")
+		return "token can't be refreshed", nil
 	}
 
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
@@ -49,12 +49,12 @@ func (h *Handler) Refresh(refreshToken *string) (string, error) {
 func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/token")
 
-	data, err := h.Refresh(h.RefreshToken)
+	data, err := h.Refresh(&h.Config.RefreshToken)
 	if err != nil {
 		data = err.Error()
 		log.Println("tokenHandler", err.Error())
 	} else {
-		h.Token = &data
+		h.Config.Token = data
 	}
 
 	w.Header().Set("Content-Type", "application/json")

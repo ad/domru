@@ -1,51 +1,38 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net/http"
 
+	"github.com/ad/domru/config"
 	"github.com/ad/domru/handlers"
 )
 
-var (
-	addr         *string
-	token        *string
-	refreshToken *string
-	login        *string
-	password     *string
-	operator     *string
-)
-
 func main() {
-	addr = flag.String("addr", ":8080", "listen address")
-	token = flag.String("token", "", "dom.ru token")
-	refreshToken = flag.String("reshresh", "", "dom.ru refresh token")
-	login = flag.String("login", "", "dom.ru login")
-	password = flag.String("password", "", "dom.ru password")
-	operator = flag.String("operator", "", "dom.ru operator")
-	flag.Parse()
+	// Init Config
+	config := config.InitConfig()
 
-	h := handlers.NewHandlers(addr, token, refreshToken, login, password, operator)
+	// Init Handlers
+	h := handlers.NewHandlers(config)
 
-	if *token != "" || *refreshToken != "" {
-		if *refreshToken != "" {
-			data, err := h.Refresh(h.RefreshToken)
+	switch {
+	case config.Token != "" || config.RefreshToken != "":
+		if config.RefreshToken != "" {
+			data, err := h.Refresh(&config.RefreshToken)
 			if err != nil {
-				data = err.Error()
 				log.Println("refresh token, error:", err.Error())
 			} else {
-				h.Token = &data
+				config.Token = data
 			}
 		}
-	} else if *login != "" && *password != "" {
-		data, err := h.Auth(h.Login, h.Password)
+	case config.Login != "" && config.Password != "":
+		data, err := h.Auth(&config.Login, &config.Password)
 		if err != nil {
 			log.Println("login error", err.Error())
 		} else {
-			token = &data
+			config.Token = data
 		}
-	} else {
+	default:
 		panic("auth/refresh token or login and password must be provided")
 	}
 
@@ -60,8 +47,8 @@ func main() {
 	http.HandleFunc("/token", h.TokenHandler)
 	http.HandleFunc("/auth", h.AuthHandler)
 
-	log.Println("start listening on", *addr, "with token", *token)
-	err := http.ListenAndServe(*addr, nil)
+	log.Println("start listening on", config.Addr, "with token", config.Token)
+	err := http.ListenAndServe(config.Addr, nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
 	}

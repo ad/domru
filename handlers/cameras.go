@@ -22,8 +22,8 @@ func (h *Handler) Cameras() (string, error) {
 
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", *h.Operator)
-	rt.Set("Authorization", "Bearer "+*h.Token)
+	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
@@ -35,7 +35,7 @@ func (h *Handler) Cameras() (string, error) {
 	log.Printf("%#v", resp)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
-		body = []byte("token can't be refreshed")
+		return "token can't be refreshed", nil
 	}
 
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {

@@ -95,8 +95,8 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 		return "", fmt.Errorf("Json parse error: %w", err)
 	}
 
-	h.Token = &authResp.Data.AccessToken
-	h.RefreshToken = &authResp.Data.RefreshToken
+	h.Config.Token = authResp.Data.AccessToken
+	h.Config.RefreshToken = authResp.Data.RefreshToken
 
 	return authResp.Data.AccessToken, nil
 }
@@ -105,7 +105,7 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/authHandler")
 
-	data, err := h.Auth(h.Login, h.Password)
+	data, err := h.Auth(&h.Config.Login, &h.Config.Password)
 	if err != nil {
 		log.Println("authHandler", err.Error())
 	}

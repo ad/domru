@@ -2,28 +2,19 @@ package handlers
 
 import (
 	"net/http"
+
+	"github.com/ad/domru/config"
 )
 
 type Handler struct {
-	Addr         *string
-	Token        *string
-	RefreshToken *string
-	Login        *string
-	Password     *string
-	Operator     *string
+	Config       *config.Config
 
 	Client *http.Client
 }
 
-func NewHandlers(addr, token, refreshToken, login, password, operator *string) (h *Handler) {
+func NewHandlers(config *config.Config) (h *Handler) {
 	h = &Handler{
-		Addr:         addr,
-		Token:        token,
-		RefreshToken: refreshToken,
-		Login:        login,
-		Password:     password,
-		Operator:     operator,
-
+		Config: config,
 		Client: http.DefaultClient,
 	}
 

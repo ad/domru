@@ -32,6 +32,14 @@ func main() {
 		} else {
 			config.Token = data
 		}
+	case config.Login != "":
+		data, err := h.Accounts(&config.Login)
+		if err != nil {
+			log.Println("login error", err.Error())
+		} else {
+			log.Println("got accounts", data)
+			// config.Token = data
+		}
 	default:
 		panic("auth/refresh token or login and password must be provided")
 	}
@@ -46,6 +54,7 @@ func main() {
 	http.HandleFunc("/stream", h.StreamHandler)
 	http.HandleFunc("/token", h.TokenHandler)
 	http.HandleFunc("/auth", h.AuthHandler)
+	http.HandleFunc("/accounts", h.AccountsHandler)
 
 	log.Println("start listening on", config.Addr, "with token", config.Token)
 	err := http.ListenAndServe(config.Addr, nil)

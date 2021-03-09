@@ -12,6 +12,15 @@ import (
 	"strings"
 )
 
+type Account struct {
+	OperatorID   int64  `json:"operatorId"`
+	SubscriberID int64  `json:"subscriberId"`
+	AccountID    string `json:"accountId"`
+	PlaceID      int64  `json:"placeId"`
+	Address      string `json:"address"`
+	ProfileID    string `json:"profileId"`
+}
+
 // Auth ...
 func (h *Handler) Auth(username, password *string) (string, error) {
 	var (
@@ -101,6 +110,59 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 	return authResp.Data.AccessToken, nil
 }
 
+// Accounts ...
+func (h *Handler) Accounts(username *string) (a *Account, err error) {
+	var (
+		body   []byte
+		client = h.Client
+	)
+
+	url := fmt.Sprintf(API_AUTH_LOGIN, *username)
+	log.Println("/accountsHandler", url)
+
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	rt := WithHeader(client.Transport)
+	rt.Set("Host", "myhome.novotelecom.ru")
+	rt.Set("Content-Type", "application/json")
+	rt.Set("Connection", "keep-alive")
+	rt.Set("Accept", "*/*")
+	rt.Set("User-Agent", API_USER_AGENT)
+	rt.Set("Authorization", "")
+	rt.Set("Accept-Language", "en-us")
+	rt.Set("Accept-Encoding", "gzip, deflate, br")
+
+	client.Transport = rt
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 409 { // Conflict (tokent already expired)
+		return nil, fmt.Errorf("token can't be refreshed")
+	}
+
+	if body, err = ioutil.ReadAll(resp.Body); err != nil {
+		return nil, err
+	}
+
+	var accounts []Account
+	json.Unmarshal(body, &accounts)
+
+	for _, a := range accounts {
+		if a.AccountID != "" {
+			return &a, nil
+		}
+	}
+
+	return nil, fmt.Errorf("account not found")
+}
+
 // AuthHandler ...
 func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("/authHandler")
@@ -111,8 +173,30 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	if _, err := w.Write([]byte(data)); err != nil {
 		log.Println("authHandler", err.Error())
+	}
+}
+
+// AccountsHandler ...
+func (h *Handler) AccountsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("/accountsHandler")
+
+	data, err := h.Accounts(&h.Config.Login)
+	if err != nil {
+		log.Println("accountsHandler", err.Error())
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+
+	if _, err := w.Write([]byte(b)); err != nil {
+		log.Println("accountsHandler", err.Error())
 	}
 }

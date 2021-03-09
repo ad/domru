@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 // Refresh ...
@@ -20,6 +22,10 @@ func (h *Handler) Refresh(refreshToken *string) (string, error) {
 		return "", err
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	defer cancel()
+	request = request.WithContext(ctx)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
 	rt.Set("Operator", h.Config.Operator)
@@ -30,7 +36,13 @@ func (h *Handler) Refresh(refreshToken *string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err2 := resp.Body.Close()
+		if err2 != nil {
+			log.Println(err2)
+		}
+	}()
 
 	log.Printf("%#v", resp)
 

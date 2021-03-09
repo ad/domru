@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Account struct {
@@ -41,7 +43,12 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 	for key, r := range values {
 		var fw io.Writer
 		if x, ok := r.(io.Closer); ok {
-			defer x.Close()
+			defer func() {
+				err2 := x.Close()
+				if err2 != nil {
+					log.Println(err2)
+				}
+			}()
 		}
 
 		if fw, err = writer.CreateFormField(key); err != nil {
@@ -73,14 +80,25 @@ func (h *Handler) Auth(username, password *string) (string, error) {
 	req.Header.Set("TE", "Trailers")
 
 	if req.Close && req.Body != nil {
-		defer req.Body.Close()
+		defer func() {
+			err2 := req.Body.Close()
+			if err2 != nil {
+				log.Println(err2)
+			}
+		}()
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err2 := resp.Body.Close()
+		if err2 != nil {
+			log.Println(err2)
+		}
+	}()
 
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("wrong response code: %d", resp.StatusCode)
@@ -125,6 +143,10 @@ func (h *Handler) Accounts(username *string) (a *Account, err error) {
 		return nil, err
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	defer cancel()
+	request = request.WithContext(ctx)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Host", "myhome.novotelecom.ru")
 	rt.Set("Content-Type", "application/json")
@@ -141,7 +163,13 @@ func (h *Handler) Accounts(username *string) (a *Account, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err2 := resp.Body.Close()
+		if err2 != nil {
+			log.Println(err2)
+		}
+	}()
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
 		return nil, fmt.Errorf("token can't be refreshed")
@@ -152,11 +180,13 @@ func (h *Handler) Accounts(username *string) (a *Account, err error) {
 	}
 
 	var accounts []Account
-	json.Unmarshal(body, &accounts)
+	if err = json.Unmarshal(body, &accounts); err != nil {
+		return nil, err
+	}
 
-	for _, a := range accounts {
-		if a.AccountID != "" {
-			return &a, nil
+	for i := range accounts {
+		if accounts[i].AccountID != "" {
+			return &accounts[i], nil
 		}
 	}
 

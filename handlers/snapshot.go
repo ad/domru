@@ -2,14 +2,16 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	jpeg "image/jpeg"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-    jpeg "image/jpeg"
+	"time"
 
-    "github.com/fogleman/gg"
+	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font/gofont/goregular"
 )
@@ -35,6 +37,10 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	defer cancel()
+	request = request.WithContext(ctx)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Operator", h.Config.Operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
@@ -45,7 +51,14 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("snapshotHandler", "connect error")
 		return
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err2 := resp.Body.Close()
+		if err2 != nil {
+			log.Println(err2)
+		}
+	}()
+
 	body, err = ioutil.ReadAll(resp.Body)
 
 	if err == nil {
@@ -60,35 +73,35 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "image/jpeg")
 
-	if err != nil  {
+	if err != nil {
 		width := 500
 		height := 281
 
-	    dc := gg.NewContext(width, height)
+		dc := gg.NewContext(width, height)
 		font, errParse := truetype.Parse(goregular.TTF)
 		if errParse == nil {
 			face := truetype.NewFace(font, &truetype.Options{Size: 16})
-	    	dc.SetFontFace(face)
+			dc.SetFontFace(face)
 		}
-		
-	    dc.SetHexColor("#000000")
-	    dc.DrawRectangle(0, 0, float64(width), float64(height))
-	    dc.Fill()
-	    dc.SetHexColor("#ffffff")
-	    dc.DrawStringWrapped(
-	    	err.Error(), // text
-	    	float64(width/2), // block x pos
-	    	float64(height/2),// block y pos
-	    	0.5, 			     // text x pos
-	    	0, 					 // text y pos
-	    	float64(width/2), // width
-	    	1, 					 // linespacing
-	    	gg.AlignCenter, 	 // align
-	    )
-	    dc.Clip()
 
-	    b := bytes.Buffer{}
-	    var opt jpeg.Options
+		dc.SetHexColor("#000000")
+		dc.DrawRectangle(0, 0, float64(width), float64(height))
+		dc.Fill()
+		dc.SetHexColor("#ffffff")
+		dc.DrawStringWrapped(
+			err.Error(),       // text
+			float64(width/2),  // block x pos
+			float64(height/2), // block y pos
+			0.5,               // text x pos
+			0,                 // text y pos
+			float64(width/2),  // width
+			1,                 // linespacing
+			gg.AlignCenter,    // align
+		)
+		dc.Clip()
+
+		b := bytes.Buffer{}
+		var opt jpeg.Options
 		opt.Quality = 75
 		err = jpeg.Encode(&b, dc.Image(), &opt)
 		if err != nil {

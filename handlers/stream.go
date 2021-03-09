@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 // Stream ...
@@ -27,6 +29,10 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 		return body, err
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	defer cancel()
+	request = request.WithContext(ctx)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
 	rt.Set("Operator", h.Config.Operator)
@@ -37,7 +43,13 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	if err != nil {
 		return body, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err2 := resp.Body.Close()
+		if err2 != nil {
+			log.Println(err2)
+		}
+	}()
 
 	if resp.StatusCode == 409 {
 		return "token can't be refreshed", nil

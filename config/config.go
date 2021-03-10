@@ -3,7 +3,6 @@ package config
 import (
 	"flag"
 	"os"
-	// "strconv"
 )
 
 // Config ...
@@ -35,6 +34,7 @@ func lookupEnvOrString(key string, defaultVal string) string {
 	if val, ok := os.LookupEnv(key); ok {
 		return val
 	}
+
 	return defaultVal
 }
 

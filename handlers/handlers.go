@@ -7,7 +7,8 @@ import (
 )
 
 type Handler struct {
-	Config       *config.Config
+	Config  *config.Config
+	Account *Account
 
 	Client *http.Client
 }

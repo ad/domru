@@ -28,8 +28,9 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+
 	request = request.WithContext(ctx)
 
 	rt := WithHeader(client.Transport)
@@ -65,8 +66,6 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 
 // EventsHandler ...
 func (h *Handler) EventsHandler(w http.ResponseWriter, r *http.Request) {
-	// log.Println("/eventsHandler")
-
 	data, err := h.Events(w, r)
 	if err != nil {
 		log.Println("eventsHandler", err.Error())

@@ -29,7 +29,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 		return body, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	request = request.WithContext(ctx)
 
@@ -68,7 +68,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	var streamResp streamResponse
 	err = json.Unmarshal(respBody, &streamResp)
 	if err != nil {
-		return "", fmt.Errorf("Json parse error: %w", err)
+		return "", fmt.Errorf("json parse error: %w", err)
 	}
 
 	return streamResp.Data.URL, nil
@@ -86,6 +86,7 @@ func (h *Handler) StreamHandler(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte(data)); err != nil {
 			log.Println("streamHandler", err.Error())
 		}
+
 		return
 	}
 

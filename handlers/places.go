@@ -17,12 +17,13 @@ func (h *Handler) Places() (string, error) {
 	)
 
 	url := API_SUBSCRIBER_PLACES
+
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	request = request.WithContext(ctx)
 

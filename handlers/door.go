@@ -39,8 +39,9 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+
 	request = request.WithContext(ctx)
 
 	rt := WithHeader(client.Transport)

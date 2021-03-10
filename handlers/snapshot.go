@@ -34,10 +34,11 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Println("snapshotHandler", err)
+
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	request = request.WithContext(ctx)
 
@@ -49,6 +50,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Println("snapshotHandler", "connect error")
+
 		return
 	}
 
@@ -78,6 +80,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		height := 281
 
 		dc := gg.NewContext(width, height)
+
 		font, errParse := truetype.Parse(goregular.TTF)
 		if errParse == nil {
 			face := truetype.NewFace(font, &truetype.Options{Size: 16})
@@ -101,12 +104,14 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		dc.Clip()
 
 		b := bytes.Buffer{}
+
 		var opt jpeg.Options
 		opt.Quality = 75
 		err = jpeg.Encode(&b, dc.Image(), &opt)
 		if err != nil {
 			log.Printf("png.Encode: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
+
 			return
 		}
 
@@ -118,6 +123,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+
 	if _, err := w.Write(body); err != nil {
 		log.Println("snapshotHandler", "unable to write image.")
 	}

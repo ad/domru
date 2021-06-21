@@ -5,155 +5,258 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"html/template"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
-	"strings"
+	"strconv"
 	"time"
 )
 
-type Account struct {
-	OperatorID   int64  `json:"operatorId"`
-	SubscriberID int64  `json:"subscriberId"`
-	AccountID    string `json:"accountId"`
-	PlaceID      int64  `json:"placeId"`
-	Address      string `json:"address"`
-	ProfileID    string `json:"profileId"`
-}
+// LoginHandler ...
+func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	ingressPath := r.Header.Get("X-Ingress-Path")
 
-type ConfirmRequest struct {
-	Confirm      string `json:"confirm1"`
-	SubscriberID int64  `json:"subscriberId"`
-	Login        string `json:"login"`
-	OperatorID   int64  `json:"operatorId"`
-	AccountID    string `json:"accountId"`
-	ProfileID    string `json:"profileId"`
-}
+	// log.Println(r.Method, "/login", ingressPath)
 
-type ConfirmResponse struct {
-	OperatorID   int64  `json:"operatorId"`
-	TokenType    string `json:"tokenType"`
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-}
+	w.Header().Set("Content-Type", "text/html")
 
-// Auth ...
-func (h *Handler) Auth(username, password *string) (string, error) {
-	var (
-		err      error
-		respBody []byte
-		body     bytes.Buffer
-		client   = h.Client
+	var loginError string
 
-		values = map[string]io.Reader{
-			"username":   strings.NewReader(*username),
-			"password":   strings.NewReader(*password),
-			"rememberMe": strings.NewReader("1"),
-		}
-	)
+	if r.Method == "POST" {
+		if err := r.ParseForm(); err != nil {
+			loginError = fmt.Sprintf("ParseForm() err: %v", err)
+		} else {
+			phone := r.FormValue("phone")
+			accounts, err := h.Accounts(&phone)
+			if err != nil {
+				loginError = fmt.Sprintf("login error: %v", err.Error())
+			} else {
+				if n, err := strconv.Atoi(phone); err == nil {
+					h.Config.Login = n
 
-	writer := multipart.NewWriter(&body)
-
-	for key, r := range values {
-		var fw io.Writer
-		if x, ok := r.(io.Closer); ok {
-			defer func() {
-				err2 := x.Close()
-				if err2 != nil {
-					log.Println(err2)
+					if err = h.Config.WriteConfig(); err != nil {
+						log.Println("error on write config file ", err)
+					}
 				}
-			}()
-		}
 
-		if fw, err = writer.CreateFormField(key); err != nil {
-			return "", err
-		}
+				h.UserAccounts = accounts
+				// log.Printf("got accounts %+v\n", accounts)
 
-		if _, err = io.Copy(fw, r); err != nil {
-			return "", err
-		}
-	}
+				data := AccountsPageData{accounts, phone, ingressPath, loginError}
 
-	err = writer.Close()
-	if err != nil {
-		return "", fmt.Errorf("writerClose: %w", err)
-	}
+				var tmpl []byte
+				var err error
+				if tmpl, err = h.TemplateFs.ReadFile("templates/accounts.html"); err != nil {
+					fmt.Println(err)
+				}
 
-	req, err := http.NewRequest("POST", API_AUTH, &body)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:77.0) Gecko/20100101 Firefox/77.0")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Content-Type", writer.FormDataContentType()) //
-	req.Header.Set("Referer", "https://interzet.domru.ru/user/login")
-	req.Header.Set("Domain", "interzet")
-	req.Header.Set("Host", "api-auth.domru.ru")
-	req.Header.Set("Origin", "https://interzet.domru.ru")
-	req.Header.Set("TE", "Trailers")
-
-	if req.Close && req.Body != nil {
-		defer func() {
-			err2 := req.Body.Close()
-			if err2 != nil {
-				log.Println(err2)
+				t := template.New("t")
+				t, err = t.Parse(string(tmpl))
+				if err != nil {
+					loginError = err.Error()
+				} else {
+					err = t.Execute(w, data)
+					if err != nil {
+						loginError = err.Error()
+					}
+				}
 			}
-		}()
-	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	defer func() {
-		err2 := resp.Body.Close()
-		if err2 != nil {
-			log.Println(err2)
+			if loginError != "" {
+				log.Println(loginError)
+			}
+			return
 		}
-	}()
-
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("wrong response code: %d", resp.StatusCode)
 	}
 
-	type authResponse struct {
-		Status int `json:"status"`
-		Data   struct {
-			AccessToken  string `json:"access_token"`
-			RefreshToken string `json:"refresh_token"`
-		} `json:"data"`
+	var tmpl []byte
+	var err error
+	if tmpl, err = h.TemplateFs.ReadFile("templates/login.html"); err != nil {
+		fmt.Println(err)
 	}
 
-	if respBody, err = ioutil.ReadAll(resp.Body); err != nil {
-		return string(respBody), err
-	}
+	data := LoginPageData{loginError, strconv.Itoa(h.Config.Login), ingressPath}
 
-	var authResp authResponse
-
-	err = json.Unmarshal(respBody, &authResp)
+	t := template.New("t")
+	t, err = t.Parse(string(tmpl))
 	if err != nil {
-		return "", fmt.Errorf("json parse error: %w", err)
+		loginError = err.Error()
+	} else {
+		err = t.Execute(w, data)
+		if err != nil {
+			loginError = err.Error()
+		}
 	}
 
-	h.Config.Token = authResp.Data.AccessToken
-	h.Config.RefreshToken = authResp.Data.RefreshToken
+	if loginError != "" {
+		log.Println(loginError)
+	}
+}
 
-	return authResp.Data.AccessToken, nil
+// LoginAddressHandler ...
+func (h *Handler) LoginAddressHandler(w http.ResponseWriter, r *http.Request) {
+	ingressPath := r.Header.Get("X-Ingress-Path")
+
+	// log.Println(r.Method, "/login/address", ingressPath)
+
+	w.Header().Set("Content-Type", "text/html")
+
+	var loginError, phone, index string
+
+	if err := r.ParseForm(); err != nil {
+		loginError = fmt.Sprintf("ParseForm() err: %v", err)
+	} else {
+		phone = r.FormValue("phone")
+		index = r.FormValue("index")
+
+		if accountIndex, err := strconv.Atoi(index); err != nil {
+			loginError = fmt.Sprintf("ParseForm() err: %v", err)
+		} else {
+			if accountIndex < 0 || accountIndex > len(h.UserAccounts)-1 {
+				loginError = "Selected wrong account"
+			} else {
+				account := h.UserAccounts[accountIndex]
+				h.Account = &account
+				result, err := h.RequestCode(&phone, account)
+				if err != nil {
+					loginError = fmt.Sprintf("loginAddress error: %v", err.Error())
+				}
+
+				if n, err := strconv.Atoi(phone); err == nil {
+					h.Config.Login = n
+				}
+
+				h.Config.Operator = int(h.Account.OperatorID)
+				if err = h.Config.WriteConfig(); err != nil {
+					log.Println("error on write config file ", err)
+				}
+
+				if !result && loginError == "" {
+					loginError = "Error on sms send"
+				}
+
+			}
+		}
+
+	}
+
+	if loginError != "" {
+		log.Println(loginError)
+	}
+
+	data := SMSPageData{phone, index, ingressPath, loginError}
+
+	var tmpl []byte
+	var err error
+	if tmpl, err = h.TemplateFs.ReadFile("templates/sms.html"); err != nil {
+		fmt.Println(err)
+	}
+
+	t := template.New("t")
+	t, err = t.Parse(string(tmpl))
+	if err != nil {
+		loginError = err.Error()
+	} else {
+		err = t.Execute(w, data)
+		if err != nil {
+			loginError = err.Error()
+		}
+	}
+
+	if loginError != "" {
+		log.Println(loginError)
+	}
+}
+
+// HomeHandler ...
+func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	ingressPath := r.Header.Get("X-Ingress-Path")
+	// log.Println(r.Method, "/", ingressPath)
+
+	if h.Config.Token == "" || h.Config.RefreshToken == "" {
+		http.Redirect(w, r, ingressPath+"/login", http.StatusSeeOther)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+
+	var loginError string
+
+	hostIP, err2 := h.HANetwork()
+	if err2 != nil {
+		loginError = "hostIP got: " + err2.Error()
+	}
+
+	var cameras Cameras
+
+	if loginError == "" {
+		camerasData, err := h.Cameras()
+		if err != nil {
+			loginError = "cameras (" + camerasData + ") got " + err.Error()
+		} else {
+			if err := json.Unmarshal([]byte(camerasData), &cameras); err != nil {
+				loginError = "cameras (" + camerasData + ") Unmarshal got " + err.Error()
+			}
+		}
+	}
+
+	var places Places
+
+	if loginError == "" {
+		placesData, err := h.Places()
+		if err != nil {
+			loginError = "places (" + placesData + ") got " + err.Error()
+		} else {
+			if err := json.Unmarshal([]byte(placesData), &places); err != nil {
+				loginError = "places (" + placesData + ") Unmarshal got " + err.Error()
+			}
+		}
+	}
+
+	data := HomePageData{
+		ingressPath,
+		hostIP,
+		strconv.Itoa(h.Config.Port),
+		loginError,
+		strconv.Itoa(h.Config.Login),
+		h.Config.Token,
+		h.Config.RefreshToken,
+		cameras,
+		places,
+	}
+
+	var tmpl []byte
+	var err error
+	if tmpl, err = h.TemplateFs.ReadFile("templates/home.html"); err != nil {
+		fmt.Println("reafile templates/home.html error", err)
+	}
+
+	t := template.New("t")
+	t, err = t.Parse(string(tmpl))
+	if err != nil {
+		loginError = "parse templates/home.html " + err.Error()
+	} else {
+		err = t.Execute(w, data)
+		if err != nil {
+			loginError = "execute templates/home.html " + err.Error()
+		}
+	}
+
+	if loginError != "" {
+		log.Println(loginError)
+	}
 }
 
 // Accounts ...
-func (h *Handler) Accounts(username *string) (a *Account, err error) {
+func (h *Handler) Accounts(username *string) (a []Account, err error) {
 	var (
 		body   []byte
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	url := fmt.Sprintf(API_AUTH_LOGIN, *username)
-	log.Println("/accountsHandler", url)
+	// log.Println("/accountsHandler", url)
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -202,28 +305,20 @@ func (h *Handler) Accounts(username *string) (a *Account, err error) {
 		return nil, err
 	}
 
-	// Set-Cookie: traefik_stick=http://10.0.0.91:8422; Path=/
-
-	for i := range accounts {
-		if accounts[i].AccountID != "" {
-			return &accounts[i], nil
-		}
-	}
-
-	return nil, fmt.Errorf("account not found")
+	return accounts, nil
 }
 
 // RequestCode ...
-func (h *Handler) RequestCode(username *string) (result bool, err error) {
+func (h *Handler) RequestCode(username *string, account Account) (result bool, err error) {
 	var (
 		body   []byte
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	url := fmt.Sprintf(API_AUTH_CONFIRMATION, *username)
-	log.Println("/requestCodeHandler", url)
+	// log.Println("/requestCodeHandler", url)
 
-	b, err := json.Marshal(h.Account)
+	b, err := json.Marshal(account)
 	if err != nil {
 		return false, err
 	}
@@ -241,7 +336,6 @@ func (h *Handler) RequestCode(username *string) (result bool, err error) {
 	rt := WithHeader(client.Transport)
 	rt.Set("Host", "myhome.novotelecom.ru")
 	rt.Set("Content-Type", "application/json")
-	// Cookie: traefik_stick=http://10.0.0.93:8422
 	rt.Set("User-Agent", API_USER_AGENT)
 	rt.Set("Connection", "keep-alive")
 	rt.Set("Accept", "*/*")
@@ -279,22 +373,25 @@ func (h *Handler) RequestCode(username *string) (result bool, err error) {
 }
 
 // SendCode ...
-func (h *Handler) SendCode(r *http.Request, username *string) (authToken, refreshToken string, err error) {
+func (h *Handler) SendCode(r *http.Request) (authToken, refreshToken string, err error) {
 	var (
 		body   []byte
-		client = h.Client
+		client = http.DefaultClient
 	)
 
-	url := fmt.Sprintf(API_AUTH_CONFIRMATION_SMS, *username)
+	url := fmt.Sprintf(API_AUTH_CONFIRMATION_SMS, strconv.Itoa(h.Config.Login))
 
-	query := r.URL.Query()
-	code := query.Get("code")
+	if err := r.ParseForm(); err != nil {
+		return "", "", fmt.Errorf("ParseForm() err: %v", err)
+	}
+
+	code := r.FormValue("code")
 
 	c := ConfirmRequest{
 		Confirm:      code,
 		SubscriberID: h.Account.SubscriberID,
-		Login:        *username,
-		OperatorID:   h.Account.OperatorID,
+		Login:        strconv.Itoa(h.Config.Login),
+		OperatorID:   int64(h.Config.Operator),
 		AccountID:    h.Account.AccountID,
 		ProfileID:    h.Account.ProfileID,
 	}
@@ -304,7 +401,7 @@ func (h *Handler) SendCode(r *http.Request, username *string) (authToken, refres
 		return "", "", err
 	}
 
-	log.Println("/sendCodeHandler", url, string(b))
+	// log.Println("/sms", url, string(b))
 
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	if err != nil {
@@ -319,7 +416,6 @@ func (h *Handler) SendCode(r *http.Request, username *string) (authToken, refres
 	rt := WithHeader(client.Transport)
 	rt.Set("Host", "myhome.novotelecom.ru")
 	rt.Set("Content-Type", "application/json")
-	// Cookie: traefik_stick=http://10.0.0.93:8422
 	rt.Set("User-Agent", API_USER_AGENT)
 	rt.Set("Connection", "keep-alive")
 	rt.Set("Accept", "*/*")
@@ -361,27 +457,13 @@ func (h *Handler) SendCode(r *http.Request, username *string) (authToken, refres
 	return "", "", fmt.Errorf("unknown error with status %d\n%s", resp.StatusCode, body)
 }
 
-// AuthHandler ...
-func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/authHandler")
-
-	data, err := h.Auth(&h.Config.Login, &h.Config.Password)
-	if err != nil {
-		log.Println("authHandler", err.Error())
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if _, err := w.Write([]byte(data)); err != nil {
-		log.Println("authHandler", err.Error())
-	}
-}
-
 // AccountsHandler ...
 func (h *Handler) AccountsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/accountsHandler")
+	// log.Println("/accountsHandler")
 
-	data, err := h.Accounts(&h.Config.Login)
+	login := strconv.Itoa(h.Config.Login)
+
+	data, err := h.Accounts(&login)
 	if err != nil {
 		log.Println("accountsHandler", err.Error())
 	}
@@ -400,19 +482,22 @@ func (h *Handler) AccountsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// SendCodeHandler ...
-func (h *Handler) SendCodeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/sendCodeHandler")
+// LoginSMSHandler ...
+func (h *Handler) LoginSMSHandler(w http.ResponseWriter, r *http.Request) {
+	// log.Println("/sms")
 
-	auth, refresh, err := h.SendCode(r, &h.Config.Login)
+	access, refresh, err := h.SendCode(r)
 	if err != nil {
-		log.Println("sendCodeHandler", err.Error())
+		log.Println("sms", err.Error())
 	}
 
-	h.Config.Token = auth
+	h.Config.Token = access
 	h.Config.RefreshToken = refresh
+	if err = h.Config.WriteConfig(); err != nil {
+		log.Println("error on write config file ", err)
+	}
 
-	if _, err := w.Write([]byte(auth + " / " + refresh)); err != nil {
-		log.Println("sendCodeHandler", err.Error())
+	if _, err := w.Write([]byte(access + " / " + refresh)); err != nil {
+		log.Println("sms", err.Error())
 	}
 }

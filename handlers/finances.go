@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func (h *Handler) Finances() (string, error) {
 	var (
 		body   []byte
 		err    error
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	url := API_FINANCES
@@ -27,9 +28,11 @@ func (h *Handler) Finances() (string, error) {
 	defer cancel()
 	request = request.WithContext(ctx)
 
+	operator := strconv.Itoa(h.Config.Operator)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
@@ -58,7 +61,7 @@ func (h *Handler) Finances() (string, error) {
 
 // FinancesHandler ...
 func (h *Handler) FinancesHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/financesHandler")
+	// log.Println("/financesHandler")
 
 	data, err := h.Finances()
 	if err != nil {

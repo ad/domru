@@ -21,7 +21,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		body   []byte
 		err    error
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	query := r.URL.Query()
@@ -29,7 +29,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	accessControlID := query.Get("accessControlID")
 
 	url := fmt.Sprintf(API_VIDEO_SNAPSHOT, placeID, accessControlID)
-	log.Println("/snapshotHandler", url)
+	// log.Println("/snapshotHandler", url)
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -42,8 +42,10 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	request = request.WithContext(ctx)
 
+	operator := strconv.Itoa(h.Config.Operator)
+
 	rt := WithHeader(client.Transport)
-	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 

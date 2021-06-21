@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -14,14 +15,14 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 	var (
 		body   []byte
 		err    error
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	query := r.URL.Query()
 	placeID := query.Get("placeID")
 
 	url := fmt.Sprintf(API_EVENTS, placeID)
-	log.Println("/eventsHandler", url)
+	// log.Println("/eventsHandler", url)
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -33,9 +34,11 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 
 	request = request.WithContext(ctx)
 
+	operator := strconv.Itoa(h.Config.Operator)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
@@ -51,7 +54,7 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 		}
 	}()
 
-	log.Printf("%#v", resp)
+	// log.Printf("%#v", resp)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
 		return "token can't be refreshed", nil

@@ -1,56 +1,49 @@
 package main
 
 import (
+	"embed"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/ad/domru/config"
 	"github.com/ad/domru/handlers"
 )
 
+//go:embed templates/*
+var templateFs embed.FS
+
 func main() {
 	// Init Config
-	config := config.InitConfig()
+	addonConfig := config.InitConfig()
 
 	// Init Handlers
-	h := handlers.NewHandlers(config)
+	h := handlers.NewHandlers(addonConfig, templateFs)
 
 	switch {
-	case config.Token != "" || config.RefreshToken != "":
-		if config.RefreshToken != "" {
-			data, err := h.Refresh(&config.RefreshToken)
+	case addonConfig.Token != "" || addonConfig.RefreshToken != "":
+		if addonConfig.RefreshToken != "" {
+			access, refresh, err := h.Refresh(&addonConfig.RefreshToken)
 			if err != nil {
 				log.Println("refresh token, error:", err.Error())
 			} else {
-				config.Token = data
-			}
-		}
-	case config.Login != "" && config.Password != "":
-		data, err := h.Auth(&config.Login, &config.Password)
-		if err != nil {
-			log.Println("login error", err.Error())
-		} else {
-			config.Token = data
-		}
-	case config.Login != "":
-		account, err := h.Accounts(&config.Login)
-		if err != nil {
-			log.Println("login error", err.Error())
-		} else {
-			log.Println("got account", account)
-			h.Account = account
-			result, err := h.RequestCode(&config.Login)
-			if err != nil {
-				log.Println("login error", err.Error())
-			}
+				addonConfig.Token = access
+				addonConfig.RefreshToken = refresh
 
-			if result {
-				log.Println("auth process success, enter the code from SMS")
+				if err = addonConfig.WriteConfig(); err != nil {
+					log.Println("error on write config file ", err)
+				}
 			}
 		}
 	default:
-		panic("auth/refresh token or login and password must be provided")
+		log.Println("auth/refresh token or login and password must be provided")
 	}
+
+	http.HandleFunc("/login", h.LoginHandler)
+	http.HandleFunc("/login/address", h.LoginAddressHandler)
+	http.HandleFunc("/sms", h.LoginSMSHandler)
+	// http.HandleFunc("/network", h.HANetworkHandler)
+	http.HandleFunc("/", h.HomeHandler)
 
 	http.HandleFunc("/cameras", h.CamerasHandler)
 	http.HandleFunc("/door", h.DoorHandler)
@@ -60,14 +53,10 @@ func main() {
 	http.HandleFunc("/places", h.PlacesHandler)
 	http.HandleFunc("/snapshot", h.SnapshotHandler)
 	http.HandleFunc("/stream", h.StreamHandler)
-	http.HandleFunc("/token", h.TokenHandler)
-	http.HandleFunc("/auth", h.AuthHandler)
-	http.HandleFunc("/accounts", h.AccountsHandler)
-	http.HandleFunc("/code", h.SendCodeHandler)
 
-	log.Println("start listening on", config.Addr, "with token", config.Token)
-	err := http.ListenAndServe(config.Addr, nil)
-	if err != nil {
+	log.Println("start listening on", addonConfig.Port, "with token", addonConfig.Token)
+
+	if err := http.ListenAndServe(":"+strconv.Itoa(addonConfig.Port), nil); err != nil {
 		panic("ListenAndServe: " + err.Error())
 	}
 }

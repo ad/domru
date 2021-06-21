@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Domru</title>
+    <style type="text/css">
+html, body { height: 100%; background: white }
+body {
+    display: flex; flex-flow: row nowrap; justify-content: center; align-items: center; text-align:center;
+
+    font:1.5em/2em, cursive;
+    font-family: Arial, Helvetica, sans-serif;
+    color:#5b5983;
+}
+
+.group {
+    position: relative;
+    padding: 10px;
+}
+
+input {
+  font-size: 16px;
+  padding: 10px;
+  display: block;
+  width: 300px;
+  border: none;
+  border-bottom: 1px solid #ccc;
+}
+
+input:focus {
+  outline: none;
+}
+
+::-webkit-input-placeholder {color: transparent}
+:-moz-placeholder {color: transparent}
+::-moz-placeholder {color: transparent}
+:-ms-input-placeholder {color: transparent}
+input::placeholder {color: transparent}
+
+input:focus::-webkit-input-placeholder {color: #5b5983}
+input:focus:-moz-placeholder {color: #5b5983}
+input:focus::-moz-placeholder {color: #5b5983}
+input:focus:-ms-input-placeholder {color: #5b5983}
+input:focus::placeholder {color: #5b5983}
+
+label {
+  color: #999;
+  font-size: 18px;
+  position: absolute;
+  pointer-events: none;
+  left: 10px;
+  top: 15px;
+  transition: 0.2s ease all;
+  -moz-transition: 0.2s ease all;
+  -webkit-transition: 0.2s ease all;
+}
+
+input:focus ~ label, input:valid ~ label {
+  top: -15px;
+  font-size: 14px;
+  color: #5264AE;
+}
+
+.bar {
+  position: relative;
+  display: block;
+  width: 320px;
+}
+.bar:before, .bar:after {
+  content: "";
+  height: 2px;
+  width: 0;
+  bottom: 0;
+  position: absolute;
+  background: #5264AE;
+  transition: 0.2s ease all;
+  -moz-transition: 0.2s ease all;
+  -webkit-transition: 0.2s ease all;
+}
+.bar:before {
+  left: 50%;
+}
+.bar:after {
+  right: 50%;
+}
+
+/* active state */
+input:focus ~ .bar:before,
+input:focus ~ .bar:after {
+  width: 50%;
+}
+
+
+
+button {
+  font-size: 14px;
+  display: inline-block;
+  height: 36px;
+  min-width: 88px;
+  padding: 6px 16px;
+  line-height: 1.42857143;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  -ms-touch-action: manipulation;
+  touch-action: manipulation;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  border:0;
+  border-radius: 2px;
+  background: #03a9f4;
+  color:#fff;
+  outline:0;
+
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 
+              0 1px 5px 0 rgba(0, 0, 0, 0.12), 
+              0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+
+}
+button:focus {
+    background: #0288d1;  
+}
+
+button:active {
+      box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+                  0 3px 14px 2px rgba(0, 0, 0, 0.12),
+                  0 5px 5px -3px rgba(0, 0, 0, 0.4);
+}
+
+figure {
+    display:inline-block; padding:10px; margin:30px;
+    border:1px solid #ddd;
+    background:#fff;
+
+    position:relative;
+    box-shadow:0 1px 4px rgba(0,0,0,.1), 0 0 40px rgba(0,0,0,.05) inset;
+}
+
+.alert.alert-danger:empty {
+    display: none;
+ }
+    </style>
+</head>
+<body>
+    <main id="wrapper">
+        <figure>
+            <h1>Вход</h1>
+            <form action="{{ .HassioIngress }}/login" method="post">
+                <div class="group">      
+                    <input type="text" required name="phone" value="{{ .Phone }}" placeholder="79991112233">
+                    <span class="bar"></span>
+                    <label>Номер телефона</label>
+                </div>
+                <br>
+                <div class="alert alert-danger">{{ .LoginError }}</div>
+                <div class="group">
+                    <button type="submit" class="btn">Войти по номеру телефона</button>
+                </div>
+            </form>
+        </figure>
+    </main>
+</body>
+</html>

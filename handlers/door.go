@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -16,7 +17,7 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 	var (
 		body   []byte
 		err    error
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	type doorData struct {
@@ -44,9 +45,11 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 
 	request = request.WithContext(ctx)
 
+	operator := strconv.Itoa(h.Config.Operator)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
@@ -62,7 +65,7 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 		}
 	}()
 
-	log.Printf("%#v", resp)
+	// log.Printf("%#v", resp)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
 		return "token can't be refreshed", nil
@@ -77,7 +80,7 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 
 // DoorHandler ...
 func (h *Handler) DoorHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/doorHandler")
+	// log.Println("/doorHandler")
 
 	data, err := h.Door(r)
 	if err != nil {

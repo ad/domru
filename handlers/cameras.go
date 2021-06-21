@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func (h *Handler) Cameras() (string, error) {
 	var (
 		body   []byte
 		err    error
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	url := API_CAMERAS
@@ -28,14 +29,17 @@ func (h *Handler) Cameras() (string, error) {
 
 	request = request.WithContext(ctx)
 
+	operator := strconv.Itoa(h.Config.Operator)
+
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Operator", h.Config.Operator)
+	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)
 	if err != nil {
+		log.Printf("%+v %s %s", resp, operator, h.Config.Token)
 		return "", err
 	}
 
@@ -46,7 +50,7 @@ func (h *Handler) Cameras() (string, error) {
 		}
 	}()
 
-	log.Printf("%#v", resp)
+	// log.Printf("%+v %s %s", resp, operator, h.Config.Token)
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
 		return "token can't be refreshed", nil
@@ -61,7 +65,7 @@ func (h *Handler) Cameras() (string, error) {
 
 // CamerasHandler ...
 func (h *Handler) CamerasHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/camerasHandler")
+	// log.Println("/camerasHandler")
 
 	data, err := h.Cameras()
 	if err != nil {

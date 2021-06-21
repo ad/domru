@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Domru</title>
+    <style type="text/css">
+html, body { height: 100%; background: white }
+body {
+    font:1.5em/2em, cursive;
+    font-family: Arial, Helvetica, sans-serif;
+    color:#5b5983;
+    text-align: center;
+}
+
+.alert.alert-danger {
+    background-color: rgb(242, 222, 222);
+    border: 1px solid rgb(235, 204, 209);
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: rgb(169, 68, 66);
+    line-height: 22.5px;
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+.alert.alert-danger:empty {
+    display: none;
+ }
+
+#wrapper {
+    max-width: 768px;
+    margin: 0 auto;
+}
+
+.resp-table {
+    display: table;
+    width: 100%;
+}
+.resp-table-body{
+    display: table-row-group;
+}
+.resp-table-row{
+    display: table-row;
+}
+.table-body-cell{
+    display: table-cell;
+    text-align: left;
+    padding: 4px;
+}
+pre {
+    text-align: left;
+}
+
+    </style>
+</head>
+<body>
+    <main id="wrapper">
+        {{ if .LoginError }}
+            <div class="alert alert-danger">
+                {{ .LoginError }}
+            </div>
+        {{ else }}
+        <div class="resp-table">
+            <div class="resp-table-body">
+                <div class="resp-table-row">
+                    <div class="table-body-cell">
+                        Номер телефона
+                    </div>
+                    <div class="table-body-cell">
+                        {{ .Phone }}
+                    </div>
+                </div>
+                <div class="resp-table-row">
+                    <div class="table-body-cell">
+                        Токен доступа
+                    </div>
+                    <div class="table-body-cell">
+                        {{ .Token }}
+                    </div>
+                </div>
+                <div class="resp-table-row">
+                    <div class="table-body-cell">
+                        Токен обновления
+                    </div>
+                    <div class="table-body-cell">
+                        {{ .RefreshToken }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{ with .Places.Data }}
+            {{ range $index, $element := . }}
+
+        <div class="resp-table">
+            <div class="resp-table-body">
+                <div class="resp-table-row">
+                    <div class="table-body-cell">
+                        Адрес
+                    </div>
+                    <div class="table-body-cell">
+                        {{ (index $element.Place.AccessControls 0).Name }}
+                    </div>
+                </div>
+                <div class="resp-table-row">
+                    <div class="table-body-cell">
+                        Видеопоток
+                    </div>
+                    <div class="table-body-cell">
+                        <input type="text" class="form-control" readonly value="http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}" style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <img src="{{ $.HassioIngress }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}" alt="Камера" width="320">
+        <pre>
+rest_command:
+    domru_open_door:
+        url: http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}
+
+camera:
+    - platform: generic
+        name: domofon
+        still_image_url: http://{{ $.HostIP }}:{{ $.Port }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}
+        stream_source: http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}
+        </pre>
+                {{ end }}
+            {{ end }}
+        {{ end }}
+    </main>
+</body>
+</html>

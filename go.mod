@@ -1,6 +1,6 @@
 module github.com/ad/domru
 
-go 1.15
+go 1.16
 
 require (
 	github.com/fogleman/gg v1.3.0

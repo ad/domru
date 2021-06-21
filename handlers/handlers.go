@@ -1,22 +1,24 @@
 package handlers
 
 import (
+	"embed"
 	"net/http"
 
 	"github.com/ad/domru/config"
 )
 
 type Handler struct {
-	Config  *config.Config
-	Account *Account
+	Config       *config.Config
+	UserAccounts []Account
+	Account      *Account
 
-	Client *http.Client
+	TemplateFs embed.FS
 }
 
-func NewHandlers(config *config.Config) (h *Handler) {
+func NewHandlers(config *config.Config, templateFs embed.FS) (h *Handler) {
 	h = &Handler{
-		Config: config,
-		Client: http.DefaultClient,
+		Config:     config,
+		TemplateFs: templateFs,
 	}
 
 	return h

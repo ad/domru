@@ -13,7 +13,7 @@ func (h *Handler) Operators() (string, error) {
 	var (
 		body   []byte
 		err    error
-		client = h.Client
+		client = http.DefaultClient
 	)
 
 	url := API_OPERATORS
@@ -43,7 +43,7 @@ func (h *Handler) Operators() (string, error) {
 		}
 	}()
 
-	log.Printf("%#v", resp)
+	// log.Printf("%#v", resp)
 
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
 		return "", err
@@ -54,7 +54,7 @@ func (h *Handler) Operators() (string, error) {
 
 // OperatorsHandler ...
 func (h *Handler) OperatorsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/operators")
+	// log.Println("/operators")
 
 	data, err := h.Operators()
 	if err != nil {

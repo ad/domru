@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -9,8 +11,17 @@ import (
 	"time"
 )
 
+type Finances struct {
+	Balance     float64 `json:"balance"`
+	BlockType   string  `json:"blockType"`
+	AmountSum   float64 `json:"amountSum"`
+	TargetDate  string  `json:"targetDate"`
+	PaymentLink string  `json:"paymentLink"`
+	Blocked     bool    `json:"blocked"`
+}
+
 // Finances ...
-func (h *Handler) Finances() (string, error) {
+func (h *Handler) Finances() ([]byte, error) {
 	var (
 		body   []byte
 		err    error
@@ -21,7 +32,7 @@ func (h *Handler) Finances() (string, error) {
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -38,7 +49,7 @@ func (h *Handler) Finances() (string, error) {
 
 	resp, err := client.Do(request)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	defer func() {
@@ -49,14 +60,14 @@ func (h *Handler) Finances() (string, error) {
 	}()
 
 	if resp.StatusCode == 409 { // Conflict (tokent already expired)
-		return "token can't be refreshed", nil
+		return []byte("token can't be refreshed"), nil
 	}
 
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(body), nil
+	return body, nil
 }
 
 // FinancesHandler ...
@@ -65,13 +76,27 @@ func (h *Handler) FinancesHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := h.Finances()
 	if err != nil {
-		data = err.Error()
 		log.Println("financesHandler", err.Error())
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if _, err := w.Write([]byte(data)); err != nil {
+	if _, err := w.Write(data); err != nil {
 		log.Println("financesHandler", err.Error())
 	}
+}
+
+func (h *Handler) GetFinances() (*Finances, error) {
+	finances := &Finances{}
+
+	data, err := h.Finances()
+	if err != nil {
+		return finances, err
+	}
+
+	if err = json.Unmarshal(data, &finances); err != nil {
+		return finances, fmt.Errorf("error on unmarshal Finances %q", err.Error())
+	}
+
+	return finances, nil
 }

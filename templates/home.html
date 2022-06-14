@@ -51,8 +51,10 @@ body {
 pre {
     text-align: left;
 }
-
     </style>
+    <script type="text/javascript">
+        http://10.0.1.19:18000/door?placeID=936129&accessControlID=5351
+    </script>
 </head>
 <body>
     <main id="wrapper">
@@ -64,57 +66,50 @@ pre {
         <div class="resp-table">
             <div class="resp-table-body">
                 <div class="resp-table-row">
-                    <div class="table-body-cell">
-                        Номер телефона
-                    </div>
-                    <div class="table-body-cell">
-                        {{ .Phone }}
-                    </div>
+                    <div class="table-body-cell">Номер телефона:</div>
+                    <div class="table-body-cell">+{{ .Phone }}</div>
                 </div>
                 <div class="resp-table-row">
-                    <div class="table-body-cell">
-                        Токен доступа
-                    </div>
-                    <div class="table-body-cell">
-                        {{ .Token }}
-                    </div>
+                    <div class="table-body-cell">Токен доступа:</div>
+                    <div class="table-body-cell">{{ .Token }}</div>
                 </div>
                 <div class="resp-table-row">
-                    <div class="table-body-cell">
-                        Токен обновления
-                    </div>
-                    <div class="table-body-cell">
-                        {{ .RefreshToken }}
-                    </div>
+                    <div class="table-body-cell">Токен&nbsp;обновления:</div>
+                    <div class="table-body-cell">{{ .RefreshToken }}</div>
                 </div>
-            </div>
-        </div>
-        {{ with .Places.Data }}
-            {{ range $index, $element := . }}
-
-        <div class="resp-table">
-            <div class="resp-table-body">
+                {{ with .Finances }}
                 <div class="resp-table-row">
-                    <div class="table-body-cell">
-                        Адрес
-                    </div>
+                    <div class="table-body-cell">Статус:</div>
+                    <div class="table-body-cell">{{ .BlockType }}</div>
+                </div>
+                <div class="resp-table-row">
+                    <div class="table-body-cell">Баланс:</div>
+                    <div class="table-body-cell">{{ .Balance }}₽</div>
+                </div>
+                {{ end }}
+                {{ with .Places.Data }}
+                    {{ range $index, $element := . }}
+                <div class="resp-table-row">
+                    <div class="table-body-cell">Адрес:</div>
                     <div class="table-body-cell">
                         {{ (index $element.Place.AccessControls 0).Name }}
+                        <button onclick="fetch('http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}'); return false;">Открыть</button>
                     </div>
                 </div>
                 <div class="resp-table-row">
+                    <div class="table-body-cell">Видеопоток:</div>
+                    <div class="table-body-cell">http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}</div>
+                </div>
+                <div class="resp-table-row">
+                    <div class="table-body-cell"></div>
                     <div class="table-body-cell">
-                        Видеопоток
-                    </div>
-                    <div class="table-body-cell">
-                        <input type="text" class="form-control" readonly value="http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}" style="width: 100%;">
+                        <img src="{{ $.HassioIngress }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}" alt="Камера" width="320">
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <img src="{{ $.HassioIngress }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}" alt="Камера" width="320">
-        <pre>
+                <div class="resp-table-row">
+                    <div class="table-body-cell"></div>
+                    <div class="table-body-cell">
+                        <pre>
 rest_command:
     domru_open_door:
         url: http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}
@@ -124,9 +119,13 @@ camera:
         name: domofon
         still_image_url: http://{{ $.HostIP }}:{{ $.Port }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}
         stream_source: http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}
-        </pre>
+                        </pre>
+                    </div>
+                </div>
+                    {{ end }}        
                 {{ end }}
-            {{ end }}
+            </div>
+        </div>
         {{ end }}
     </main>
 </body>

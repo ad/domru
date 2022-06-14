@@ -108,6 +108,7 @@ type HomePageData struct {
 	RefreshToken  string
 	Cameras       Cameras
 	Places        Places
+	Finances      Finances
 }
 
 type HAConfig struct {

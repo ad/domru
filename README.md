@@ -17,13 +17,13 @@ go get -u github.com/ad/domru
 ```
 
 ```shell
-domru -login=1234567890 -password=qwerty -operator=2
+domru -login=1234567890 -operator=2 -token=... -refresh=... -port=18000
 ```
 
 ## 🚀&nbsp; Or Docker
 ```shell
 docker build -t ad/domru:latest .
-docker run --name domru --rm -p 8080:8080 DOMRU_LOGIN=1234567890 -e DOMRU_PASSWORD=qwerty -e DOMRU_OPERATOR=2 ad/domru:latest
+docker run --name domru --rm -p 8080:18000 DOMRU_LOGIN=1234567890 -e DOMRU_TOKEN=qwerty -e DOMRU_REFRESH=qwerty -e DOMRU_OPERATOR=2 -e DOMRU_PORT=18000 ad/domru:latest
 ```
 
 

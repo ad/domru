@@ -185,7 +185,8 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	hostIP, err2 := h.HANetwork()
 	if err2 != nil {
-		loginError = "hostIP got: " + err2.Error()
+		// loginError = "hostIP got: " + err2.Error()
+		hostIP = "localhost"
 	}
 
 	var cameras Cameras
@@ -214,16 +215,19 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	finances, _ := h.GetFinances()
+
 	data := HomePageData{
-		ingressPath,
-		hostIP,
-		strconv.Itoa(h.Config.Port),
-		loginError,
-		strconv.Itoa(h.Config.Login),
-		h.Config.Token,
-		h.Config.RefreshToken,
-		cameras,
-		places,
+		HassioIngress: ingressPath,
+		HostIP:        hostIP,
+		Port:          strconv.Itoa(h.Config.Port),
+		LoginError:    loginError,
+		Phone:         strconv.Itoa(h.Config.Login),
+		Token:         h.Config.Token,
+		RefreshToken:  h.Config.RefreshToken,
+		Cameras:       cameras,
+		Places:        places,
+		Finances:      *finances,
 	}
 
 	var tmpl []byte

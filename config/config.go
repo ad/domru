@@ -29,7 +29,7 @@ func InitConfig() *Config {
 
 	if err := ensureDir(ConfigFileName); err != nil {
 		log.Println("directory for config not writable", ConfigFileName, err)
-		return config
+		// return config
 	}
 
 	if _, err := os.Stat(ConfigFileName); err == nil {

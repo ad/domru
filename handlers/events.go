@@ -21,6 +21,10 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 	query := r.URL.Query()
 	placeID := query.Get("placeID")
 
+	if placeID == "" {
+		return "provide placeID", fmt.Errorf("%s", "provide placeID")
+	}
+
 	url := fmt.Sprintf(API_EVENTS, placeID)
 	// log.Println("/eventsHandler", url)
 

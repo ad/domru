@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	jpeg "image/jpeg"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -63,7 +63,7 @@ func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 
 	if err == nil {
 		contentType := http.DetectContentType(body)

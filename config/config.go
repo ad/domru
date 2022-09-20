@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,6 +18,7 @@ type Config struct {
 	Login        int    `json:"login"`
 	Operator     int    `json:"operator"`
 	Port         int    `json:"port"`
+	UseWebsocket bool   `json:"useWebsocket,omitempty"`
 }
 
 // InitConfig ...
@@ -35,12 +35,7 @@ func InitConfig() *Config {
 	if _, err := os.Stat(ConfigFileName); err == nil {
 		// log.Println("trying to load config from file", ConfigFileName)
 
-		jsonFile, err := os.Open(ConfigFileName)
-		if err != nil {
-			log.Println("error on load config from file ", err)
-		}
-
-		byteValue, _ := ioutil.ReadAll(jsonFile)
+		byteValue, _ := os.ReadFile(ConfigFileName)
 		if err = json.Unmarshal(byteValue, &config); err != nil {
 			log.Println("error on unmarshal config from file ", err)
 		}
@@ -61,6 +56,7 @@ func InitConfig() *Config {
 	flag.IntVar(&config.Login, "login", lookupEnvOrInt("DOMRU_LOGIN", config.Login), "dom.ru login(or phone in format 71231234567)")
 	flag.IntVar(&config.Operator, "operator", lookupEnvOrInt("DOMRU_OPERATOR", config.Operator), "dom.ru operator")
 	flag.IntVar(&config.Port, "port", lookupEnvOrInt("DOMRU_PORT", config.Port), "listen port")
+	flag.BoolVar(&config.UseWebsocket, "useWebsocket", lookupEnvOrBool("WEBSOCKET", config.UseWebsocket), "Use websocket")
 
 	flag.Parse()
 
@@ -94,7 +90,7 @@ func TouchConfig() error {
 func (config *Config) WriteConfig() error {
 	file, _ := json.MarshalIndent(config, "", " ")
 
-	err := ioutil.WriteFile(ConfigFileName, file, 0644)
+	err := os.WriteFile(ConfigFileName, file, 0644)
 
 	return err
 }
@@ -119,14 +115,14 @@ func ensureDir(fileName string) error {
 	return nil
 }
 
-// func lookupEnvOrBool(key string, defaultVal bool) bool {
-// 	if val, ok := os.LookupEnv(key); ok {
-// 		if val == "true" {
-// 			return true
-// 		}
-// 		if val == "false" {
-// 			return false
-// 		}
-// 	}
-// 	return defaultVal
-// }
+func lookupEnvOrBool(key string, defaultVal bool) bool {
+	if val, ok := os.LookupEnv(key); ok {
+		if val == "true" {
+			return true
+		}
+		if val == "false" {
+			return false
+		}
+	}
+	return defaultVal
+}

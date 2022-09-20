@@ -1,6 +1,6 @@
 {
  "name": "Domofon",
- "version": "0.2.1",
+ "version": "0.3.1",
  "slug": "domofon",
  "description": "",
  "startup": "application",
@@ -20,12 +20,17 @@
  "webui": "http://[HOST]:[PORT:18000]/",
  "panel_admin": true,
  "panel_icon": "mdi:home-city-outline",
- "panel_title": "Умный Дом",
- "schema": false,
+ "panel_title": "Домофон",
  "ports": {
   "18000/tcp": 18000
  },
  "ports_description": {
   "18000/tcp": "GUI http access"
+ },
+ "options": {
+   "WEBSOCKET": false
+ },
+ "schema": {
+   "WEBSOCKET": "bool"
  }
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -58,7 +58,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 		return "token can't be refreshed", nil
 	}
 
-	if respBody, err = ioutil.ReadAll(resp.Body); err != nil {
+	if respBody, err = io.ReadAll(resp.Body); err != nil {
 		return string(respBody), err
 	}
 

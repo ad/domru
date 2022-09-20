@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -59,7 +59,7 @@ func (h *Handler) HANetwork() (string, error) {
 
 	// log.Printf("%+v", resp)
 
-	if body, err = ioutil.ReadAll(resp.Body); err != nil {
+	if body, err = io.ReadAll(resp.Body); err != nil {
 		return "", fmt.Errorf("supervisor ip ReadAll %s", err.Error())
 	}
 

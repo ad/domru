@@ -70,61 +70,11 @@ func (h *Handler) Finances() ([]byte, error) {
 	return body, nil
 }
 
-// Finances ...
-func (h *Handler) Crash() ([]byte, error) {
-	var (
-		body   []byte
-		err    error
-		client = http.DefaultClient
-	)
-
-	url := "https://api-profile.dom.ru/v1/ppr"
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	request = request.WithContext(ctx)
-
-	// operator := strconv.Itoa(h.Config.Operator)
-
-	rt := WithHeader(client.Transport)
-	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("Domain", "interzet")
-	rt.Set("Authorization", "Bearer "+h.Config.Token)
-	client.Transport = rt
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		err2 := resp.Body.Close()
-		if err2 != nil {
-			log.Println(err2)
-		}
-	}()
-
-	if resp.StatusCode == 409 { // Conflict (tokent already expired)
-		return []byte("token can't be refreshed"), nil
-	}
-
-	if body, err = io.ReadAll(resp.Body); err != nil {
-		return nil, err
-	}
-
-	return body, nil
-}
-
 // FinancesHandler ...
 func (h *Handler) FinancesHandler(w http.ResponseWriter, r *http.Request) {
 	// log.Println("/financesHandler")
 
-	data, err := h.Crash()
+	data, err := h.Finances()
 	if err != nil {
 		log.Println("financesHandler", err.Error())
 	}

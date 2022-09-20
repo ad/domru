@@ -94,8 +94,7 @@ func (h *Handler) Crash() ([]byte, error) {
 	rt := WithHeader(client.Transport)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
 	rt.Set("Domain", "interzet")
-	// rt.Set("Authorization", "Bearer "+h.Config.Token)
-	rt.Set("Authorization", "Bearer eyAiYWxnIjogIlNIMSIsICJ0eXAiOiAiSldUIiwgImsiOiAiMzAiIH0.2eHTEMGZNc1el2Rru5BPLUhy7f9sQOU9_9gCoQL3NBix7xmZe_pciOOzOXMG7hPYD1EU4cPP3jialcej2Z9s8Ds4j8Tuhqg3LQ_F4STPzNHKMgPa__gSbUbYwJ1zHml0M6bGby911L78jqRZ2JU7qg1EI7owqTTSFqst_5b6ldAHcoHonreWmDfwDOAZl2lo0VrAfEQMVC_Z8nggv1jT1Q1Qq6ntBFjetwB5GX83teilLN9i7XhJM1jxSWBugM-jPYcIAoLxHF9PwC3vxadepYqKjYVW_oLvtfdOWbGR25WPZXFPqzVE8oJiILtaaA-AfqGK6yXV4q-lrTm-OUepUg.QThEQTk2OEQwQ0JFMEQxREI3MDcwMDgzOTQyRkJDQzY4MDdFOUQ5Mw")
+	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt
 
 	resp, err := client.Do(request)

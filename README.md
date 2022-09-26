@@ -24,7 +24,19 @@ domru -login=1234567890 -operator=2 -token=... -refresh=... -port=18000
 
 ```shell
 docker build -t ad/domru:latest .
-docker run --name domru --rm -p 8080:18000 -e DOMRU_LOGIN=1234567890 -e DOMRU_TOKEN=qwerty -e DOMRU_REFRESH=qwerty -e DOMRU_OPERATOR=2 -e DOMRU_PORT=18000 ad/domru:latest
+
+docker run --name domru --rm -p 8080:18000 -e DOMRU_PORT=18000 -v $(pwd)/accounts.json:/share/domofon/account.json ad/domru:latest
+open http://localhost:8080/login
+
+enter phone number in format 79xxxxxxxxx
+choose your address
+enter sms code, you will see received token and refresh token
+
+restart docker container
+
+docker run --name domru --rm -p 8080:18000 -e DOMRU_PORT=18000 -v $(pwd)/accounts.json:/share/domofon/account.json ad/domru:latest
+
+now go to http://localhost:8080
 ```
 
 And open in browser [http://localhost:8080/snapshot](http://localhost:8080/snapshot)

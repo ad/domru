@@ -7,7 +7,7 @@ RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
 WORKDIR $GOPATH/src/app/
 COPY . .
 COPY config.json /config.json
-RUN mkdir -p /data && touch /data/account.json && chmod 777 /data/account.json
+RUN mkdir -p /share/domofon && touch /share/domofon/account.json && chmod 777 /share/domofon/account.json
 
 RUN CGO_ENABLED=0 go build -mod=vendor -ldflags='-w -s -extldflags "-static"' -a -o /go/bin/domru .
 
@@ -21,7 +21,7 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 COPY --from=builder /go/bin/domru /go/bin/domru
 COPY --from=builder /config.json /config.json
-COPY --from=builder /data/account.json /data/account.json
+COPY --from=builder /share/domofon/account.json /share/domofon/account.json
 
 EXPOSE 18000
 

@@ -18,7 +18,6 @@ type Config struct {
 	Login        int    `json:"login"`
 	Operator     int    `json:"operator"`
 	Port         int    `json:"port"`
-	UseWebsocket bool   `json:"useWebsocket,omitempty"`
 }
 
 // InitConfig ...
@@ -56,7 +55,6 @@ func InitConfig() *Config {
 	flag.IntVar(&config.Login, "login", lookupEnvOrInt("DOMRU_LOGIN", config.Login), "dom.ru login(or phone in format 71231234567)")
 	flag.IntVar(&config.Operator, "operator", lookupEnvOrInt("DOMRU_OPERATOR", config.Operator), "dom.ru operator")
 	flag.IntVar(&config.Port, "port", lookupEnvOrInt("DOMRU_PORT", config.Port), "listen port")
-	flag.BoolVar(&config.UseWebsocket, "useWebsocket", lookupEnvOrBool("WEBSOCKET", config.UseWebsocket), "Use websocket")
 
 	flag.Parse()
 
@@ -90,9 +88,7 @@ func TouchConfig() error {
 func (config *Config) WriteConfig() error {
 	file, _ := json.MarshalIndent(config, "", " ")
 
-	err := os.WriteFile(ConfigFileName, file, 0644)
-
-	return err
+	return os.WriteFile(ConfigFileName, file, 0644)
 }
 
 func lookupEnvOrInt(key string, defaultVal int) int {
@@ -115,14 +111,14 @@ func ensureDir(fileName string) error {
 	return nil
 }
 
-func lookupEnvOrBool(key string, defaultVal bool) bool {
-	if val, ok := os.LookupEnv(key); ok {
-		if val == "true" {
-			return true
-		}
-		if val == "false" {
-			return false
-		}
-	}
-	return defaultVal
-}
+// func lookupEnvOrBool(key string, defaultVal bool) bool {
+// 	if val, ok := os.LookupEnv(key); ok {
+// 		if val == "true" {
+// 			return true
+// 		}
+// 		if val == "false" {
+// 			return false
+// 		}
+// 	}
+// 	return defaultVal
+// }

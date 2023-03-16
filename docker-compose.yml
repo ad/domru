@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  domru:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    image: ad/domru:latest
+    container_name: domru
+    restart: always
+    networks:
+      - domru-net
+    ports:
+      - ${DOMRU_HOST_PORT:-8080}:18000
+    environment:
+      - DOMRU_PORT=18000
+    volumes:
+      - ./accounts.json:/share/domofon/account.json
+
+networks:
+  domru-net:
+    name: domru-net
+    driver: bridge

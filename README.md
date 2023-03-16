@@ -17,12 +17,14 @@ go get -u github.com/ad/domru
 ```
 
 ```shell
+cp example.accounts.json accounts.json
 domru -login=1234567890 -operator=2 -token=... -refresh=... -port=18000
 ```
 
 ## 🚀&nbsp; Or Docker
 
 ```shell
+cp example.accounts.json accounts.json
 docker build -t ad/domru:latest .
 
 docker run --name domru --rm -p 8080:18000 -e DOMRU_PORT=18000 -v $(pwd)/accounts.json:/share/domofon/account.json ad/domru:latest

@@ -41,6 +41,9 @@ now go to http://localhost:8080
 
 And open in browser [http://localhost:8080/snapshot](http://localhost:8080/snapshot)
 
+## Docker image
+You can find docker image in packages section of this github repository or pull it using `docker pull ghcr.io/ad/domru:latest`
+
 ## Endpoints and methods
 
 | Endpoint | Method | Description |
@@ -58,6 +61,7 @@ And open in browser [http://localhost:8080/snapshot](http://localhost:8080/snaps
 | `/places` | GET | Get places list |
 | `/snapshot` | GET | Get snapshot by `placeID` and `accessControlID` |
 | `/stream` | GET | Get link to stream by `cameraID` |
+
 
 ## 🤝&nbsp; Found a bug? Missing a specific feature?
 

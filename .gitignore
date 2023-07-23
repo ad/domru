@@ -17,3 +17,7 @@ domru
 deploy.sh
 
 .DS_Store
+
+
+# File with credentials
+accounts.json

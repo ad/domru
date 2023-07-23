@@ -1,0 +1,42 @@
+name: Build & publish docker image
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - master
+    - release/*
+  create:
+    tags:
+      - v*
+
+env:
+  DOCKER_IMAGE_NAME: domru
+  DOCKER_IMAGE_TAG: latest
+  GO_VERSION: '1.20'
+
+jobs:
+  build_and_publish:
+    name: Build & publish docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: lowercase repository owner name
+        run: |
+          echo "GITHUB_REPOSITORY_OWNER_LOWERED=${GITHUB_REPOSITORY_OWNER,,}" >>${GITHUB_ENV}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ env.GITHUB_REPOSITORY_OWNER_LOWERED }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}

@@ -41,6 +41,13 @@ docker run --name domru --rm -p 8080:18000 -e DOMRU_PORT=18000 -v $(pwd)/account
 now go to http://localhost:8080
 ```
 
+## 🚀&nbsp; Or Docker Compose
+```
+docker-compose up
+
+the following instructions are the same
+```
+
 And open in browser [http://localhost:8080/snapshot](http://localhost:8080/snapshot)
 
 ## Endpoints and methods

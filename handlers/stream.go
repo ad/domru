@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -23,9 +24,12 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	query := r.URL.Query()
 	cameraID := query.Get("cameraID")
 
-	url := fmt.Sprintf(API_CAMERA_GET_STREAM, cameraID)
+	targetRawURL := fmt.Sprintf(API_CAMERA_GET_STREAM, cameraID)
 
-	request, err := http.NewRequest("GET", url, nil)
+	targetURL, _ := url.Parse(targetRawURL)
+	targetURL.RawQuery = r.URL.RawQuery
+
+	request, err := http.NewRequest("GET", targetURL.String(), nil)
 	if err != nil {
 		return body, err
 	}

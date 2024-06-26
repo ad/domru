@@ -5,8 +5,8 @@ github.com/fogleman/gg
 ## explicit
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
-# golang.org/x/image v0.10.0
-## explicit; go 1.12
+# golang.org/x/image v0.18.0
+## explicit; go 1.18
 golang.org/x/image/draw
 golang.org/x/image/font
 golang.org/x/image/font/basicfont

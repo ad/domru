@@ -1,6 +1,7 @@
-FROM golang:alpine as builder
+FROM --platform=$BUILDPLATFORM golang:alpine AS builder
 
-ARG BUILD_ARCH
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
 
@@ -9,12 +10,13 @@ COPY . .
 COPY config.json /config.json
 RUN mkdir -p /share/domofon && touch /share/domofon/account.json && chmod 777 /share/domofon/account.json
 
-RUN CGO_ENABLED=0 go build -mod=vendor -ldflags='-w -s -extldflags "-static"' -a -o /go/bin/domru .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -mod=vendor -ldflags='-w -s -extldflags "-static"' -a -o /go/bin/domru .
 
 FROM scratch
 
 ARG BUILD_DATE
 ARG BUILD_REF
+ARG TARGETARCH
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/passwd /etc/passwd
@@ -31,7 +33,7 @@ ENTRYPOINT ["/go/bin/domru"]
 LABEL \
     io.hass.name="Domofon addon" \
     io.hass.description="Domofon addon" \
-    io.hass.arch="${BUILD_ARCH}" \
+    io.hass.arch=${TARGETARCH} \
     io.hass.type="addon" \
     maintainer="ad <github@apatin.ru>" \
     org.label-schema.description="Domofon addon" \

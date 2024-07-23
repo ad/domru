@@ -5,7 +5,7 @@ services:
     build:
       context: "."
       dockerfile: Dockerfile
-    image: ad/domru:latest
+    image: danielapatin/domru:latest
     container_name: domru
     restart: always
     networks:

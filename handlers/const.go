@@ -2,7 +2,7 @@ package handlers
 
 const (
 	API_USER_AGENT   = "myHomeErth/8 CFNetwork/1209 Darwin/20.2.0"
-	CLIENT_USERAGENT = "iPhone11,6 | iOS 14.3 | erth | 6.4.6 (build 3) | %s | 2 | %s"
+	CLIENT_USERAGENT = "Google sdkgphone64x8664 | Android 14 | erth | 8.9.2 (8090200) |  | null | 10c99d90-9899-4a25-926f-067b34bc4a7f | null"
 
 	API_HA_NETWORK = "http://supervisor/network/info"
 

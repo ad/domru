@@ -44,6 +44,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
 	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
+	rt.Set("User-Agent", CLIENT_USERAGENT)
 	client.Transport = rt
 
 	resp, err := client.Do(request)

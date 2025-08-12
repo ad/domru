@@ -273,7 +273,7 @@ func (h *Handler) Accounts(username *string) (a []Account, err error) {
 	request = request.WithContext(ctx)
 
 	rt := WithHeader(client.Transport)
-	rt.Set("Host", "myhome.novotelecom.ru")
+	rt.Set("Host", "myhome.proptech.ru")
 	rt.Set("Content-Type", "application/json")
 	rt.Set("Connection", "keep-alive")
 	rt.Set("Accept", "*/*")
@@ -338,7 +338,7 @@ func (h *Handler) RequestCode(username *string, account Account) (result bool, e
 	request = request.WithContext(ctx)
 
 	rt := WithHeader(client.Transport)
-	rt.Set("Host", "myhome.novotelecom.ru")
+	rt.Set("Host", "myhome.proptech.ru")
 	rt.Set("Content-Type", "application/json")
 	rt.Set("User-Agent", API_USER_AGENT)
 	rt.Set("Connection", "keep-alive")
@@ -418,7 +418,7 @@ func (h *Handler) SendCode(r *http.Request) (authToken, refreshToken string, err
 	request = request.WithContext(ctx)
 
 	rt := WithHeader(client.Transport)
-	rt.Set("Host", "myhome.novotelecom.ru")
+	rt.Set("Host", "myhome.proptech.ru")
 	rt.Set("Content-Type", "application/json")
 	rt.Set("User-Agent", API_USER_AGENT)
 	rt.Set("Connection", "keep-alive")

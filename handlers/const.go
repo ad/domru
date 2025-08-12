@@ -6,21 +6,21 @@ const (
 
 	API_HA_NETWORK = "http://supervisor/network/info"
 
-	API_AUTH_LOGIN            = "https://myhome.novotelecom.ru/auth/v2/login/%s"
-	API_AUTH_CONFIRMATION     = "https://myhome.novotelecom.ru/auth/v2/confirmation/%s"
-	API_AUTH_CONFIRMATION_SMS = "https://myhome.novotelecom.ru/auth/v2/auth/%s/confirmation"
+	API_AUTH_LOGIN            = "https://myhome.proptech.ru/auth/v2/login/%s"
+	API_AUTH_CONFIRMATION     = "https://myhome.proptech.ru/auth/v2/confirmation/%s"
+	API_AUTH_CONFIRMATION_SMS = "https://myhome.proptech.ru/auth/v2/auth/%s/confirmation"
 
 	API_AUTH = "https://api-auth.domru.ru/v1/person/auth"
 
-	API_CAMERAS           = "https://myhome.novotelecom.ru/rest/v1/forpost/cameras"
-	API_OPEN_DOOR         = "https://myhome.novotelecom.ru/rest/v1/places/%s/accesscontrols/%s/actions"
-	API_FINANCES          = "https://myhome.novotelecom.ru/rest/v1/subscribers/profiles/finances"
-	API_SUBSCRIBER_PLACES = "https://myhome.novotelecom.ru/rest/v1/subscriberplaces"
-	API_VIDEO_SNAPSHOT    = "https://myhome.novotelecom.ru/rest/v1/places/%s/accesscontrols/%s/videosnapshots"
-	API_CAMERA_GET_STREAM = "https://myhome.novotelecom.ru/rest/v1/forpost/cameras/%s/video"
-	API_REFRESH_SESSION   = "https://myhome.novotelecom.ru/auth/v2/session/refresh"
-	API_EVENTS            = "https://myhome.novotelecom.ru/rest/v1/places/%s/events?allowExtentedActions=true"
-	API_OPERATORS         = "https://myhome.novotelecom.ru/public/v1/operators"
+	API_CAMERAS           = "https://myhome.proptech.ru/rest/v1/forpost/cameras"
+	API_OPEN_DOOR         = "https://myhome.proptech.ru/rest/v1/places/%s/accesscontrols/%s/actions"
+	API_FINANCES          = "https://myhome.proptech.ru/rest/v1/subscribers/profiles/finances"
+	API_SUBSCRIBER_PLACES = "https://myhome.proptech.ru/rest/v1/subscriberplaces"
+	API_VIDEO_SNAPSHOT    = "https://myhome.proptech.ru/rest/v1/places/%s/accesscontrols/%s/videosnapshots"
+	API_CAMERA_GET_STREAM = "https://myhome.proptech.ru/rest/v1/forpost/cameras/%s/video"
+	API_REFRESH_SESSION   = "https://myhome.proptech.ru/auth/v2/session/refresh"
+	API_EVENTS            = "https://myhome.proptech.ru/rest/v1/places/%s/events?allowExtentedActions=true"
+	API_OPERATORS         = "https://myhome.proptech.ru/public/v1/operators"
 )
 
 type Account struct {

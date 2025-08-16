@@ -31,7 +31,9 @@ func (h *Handler) Places() (string, error) {
 	operator := strconv.Itoa(h.Config.Operator)
 
 	rt := WithHeader(client.Transport)
+	rt.Set("Host", API_HOST)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
+	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, 0))
 	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt

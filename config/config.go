@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 var ConfigFileName = "/share/domofon/account.json"
@@ -18,6 +20,7 @@ type Config struct {
 	Login        int    `json:"login"`
 	Operator     int    `json:"operator"`
 	Port         int    `json:"port"`
+	UUID         string `json:"uuid"`
 }
 
 // InitConfig ...
@@ -50,11 +53,17 @@ func InitConfig() *Config {
 		}
 	}
 
+	// Генерируем UUID если его нет
+	if config.UUID == "" {
+		config.UUID = uuid.New().String()
+	}
+
 	flag.StringVar(&config.Token, "token", lookupEnvOrString("DOMRU_TOKEN", config.Token), "dom.ru token")
 	flag.StringVar(&config.RefreshToken, "refresh", lookupEnvOrString("DOMRU_REFRESH", config.RefreshToken), "dom.ru refresh token")
 	flag.IntVar(&config.Login, "login", lookupEnvOrInt("DOMRU_LOGIN", config.Login), "dom.ru login(or phone in format 71231234567)")
 	flag.IntVar(&config.Operator, "operator", lookupEnvOrInt("DOMRU_OPERATOR", config.Operator), "dom.ru operator")
 	flag.IntVar(&config.Port, "port", lookupEnvOrInt("DOMRU_PORT", config.Port), "listen port")
+	flag.StringVar(&config.UUID, "uuid", lookupEnvOrString("DOMRU_UUID", config.UUID), "dom.ru device uuid")
 
 	flag.Parse()
 

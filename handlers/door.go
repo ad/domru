@@ -47,8 +47,13 @@ func (h *Handler) Door(r *http.Request) (string, error) {
 
 	operator := strconv.Itoa(h.Config.Operator)
 
+	// Конвертируем placeID из строки в int64
+	placeIDInt, _ := strconv.ParseInt(placeID, 10, 64)
+
 	rt := WithHeader(client.Transport)
+	rt.Set("Host", API_HOST)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
+	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, placeIDInt))
 	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt

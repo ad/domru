@@ -28,7 +28,9 @@ func (h *Handler) Operators() (string, error) {
 	request = request.WithContext(ctx)
 
 	rt := WithHeader(client.Transport)
+	rt.Set("Host", API_HOST)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
+	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, 0))
 	client.Transport = rt
 
 	resp, err := client.Do(request)

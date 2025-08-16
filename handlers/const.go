@@ -1,16 +1,15 @@
 package handlers
 
+import "fmt"
+
 const (
-	API_USER_AGENT   = "myHomeErth/8 CFNetwork/1209 Darwin/20.2.0"
-	CLIENT_USERAGENT = "Google sdkgphone64x8664 | Android 14 | erth | 8.9.2 (8090200) |  | null | 10c99d90-9899-4a25-926f-067b34bc4a7f | null"
+	API_HOST = "myhome.proptech.ru"
 
 	API_HA_NETWORK = "http://supervisor/network/info"
 
 	API_AUTH_LOGIN            = "https://myhome.proptech.ru/auth/v2/login/%s"
 	API_AUTH_CONFIRMATION     = "https://myhome.proptech.ru/auth/v2/confirmation/%s"
 	API_AUTH_CONFIRMATION_SMS = "https://myhome.proptech.ru/auth/v2/auth/%s/confirmation"
-
-	API_AUTH = "https://api-auth.domru.ru/v1/person/auth"
 
 	API_CAMERAS           = "https://myhome.proptech.ru/rest/v1/forpost/cameras"
 	API_OPEN_DOOR         = "https://myhome.proptech.ru/rest/v1/places/%s/accesscontrols/%s/actions"
@@ -22,6 +21,15 @@ const (
 	API_EVENTS            = "https://myhome.proptech.ru/rest/v1/places/%s/events?allowExtentedActions=true"
 	API_OPERATORS         = "https://myhome.proptech.ru/public/v1/operators"
 )
+
+// GenerateUserAgent создает User-Agent с operatorID, UUID и placeID
+func GenerateUserAgent(operatorID int, uuid string, placeID int64) string {
+	// Если placeID не указан или равен 0, используем 1 по умолчанию
+	if placeID == 0 {
+		placeID = 1
+	}
+	return fmt.Sprintf("Google sdkgphone64x8664 | Android 14 | erth | 8.26.0 (82600010) | | %d | %s | %d", operatorID, uuid, placeID)
+}
 
 type Account struct {
 	OperatorID   int64  `json:"operatorId"`

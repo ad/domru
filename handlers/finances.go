@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -65,7 +64,7 @@ func (h *Handler) Finances() ([]byte, error) {
 		return []byte("token can't be refreshed"), nil
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return nil, err
 	}
 

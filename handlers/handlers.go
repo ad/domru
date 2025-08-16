@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"embed"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/ad/domru/config"
 )
@@ -46,4 +49,21 @@ func (h Header) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	return h.rt.RoundTrip(req)
+}
+
+// ReadResponseBody читает тело ответа с поддержкой gzip декомпрессии
+func ReadResponseBody(resp *http.Response) ([]byte, error) {
+	var reader io.Reader = resp.Body
+
+	// Проверяем, сжат ли ответ gzip
+	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Encoding")), "gzip") {
+		gzipReader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		defer gzipReader.Close()
+		reader = gzipReader
+	}
+
+	return io.ReadAll(reader)
 }

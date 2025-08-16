@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -56,7 +55,7 @@ func (h *Handler) Places() (string, error) {
 		return "token can't be refreshed", nil
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return "", err
 	}
 

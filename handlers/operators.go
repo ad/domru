@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -47,7 +46,7 @@ func (h *Handler) Operators() (string, error) {
 
 	// log.Printf("%#v", resp)
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return "", err
 	}
 

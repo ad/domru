@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -90,7 +89,7 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) (string, error)
 		return "token can't be refreshed", nil
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return "", err
 	}
 
@@ -155,7 +154,7 @@ func (h *Handler) LastEvent(w http.ResponseWriter, r *http.Request) (events Even
 		return events, fmt.Errorf("%s", "token can't be refreshed")
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return events, err
 	}
 

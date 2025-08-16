@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -300,7 +299,7 @@ func (h *Handler) Accounts(username *string) (a []Account, err error) {
 		return nil, fmt.Errorf("token can't be refreshed")
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return nil, err
 	}
 
@@ -369,7 +368,7 @@ func (h *Handler) RequestCode(username *string, account Account) (result bool, e
 		return true, nil
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return false, err
 	}
 
@@ -445,7 +444,7 @@ func (h *Handler) SendCode(r *http.Request) (authToken, refreshToken string, err
 		return "", "", fmt.Errorf("token can't be refreshed")
 	}
 
-	if body, err = io.ReadAll(resp.Body); err != nil {
+	if body, err = ReadResponseBody(resp); err != nil {
 		return "", "", err
 	}
 

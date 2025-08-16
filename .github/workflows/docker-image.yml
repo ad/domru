@@ -12,7 +12,7 @@ on:
 env:
   DOCKER_IMAGE_NAME: domru
   DOCKER_IMAGE_TAG: latest
-  GO_VERSION: '1.20'
+  GO_VERSION: '1.24'
 
 jobs:
   build_and_publish:

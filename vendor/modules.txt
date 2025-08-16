@@ -5,6 +5,9 @@ github.com/fogleman/gg
 ## explicit
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
 # golang.org/x/image v0.18.0
 ## explicit; go 1.18
 golang.org/x/image/draw

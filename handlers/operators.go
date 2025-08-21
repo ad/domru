@@ -1,71 +1,39 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"log"
 	"net/http"
-	"time"
+
+	"github.com/ad/domru/internal/api"
 )
 
 // Operators ...
-func (h *Handler) Operators() (string, error) {
-	var (
-		body   []byte
-		err    error
-		client = http.DefaultClient
-	)
-
-	url := API_OPERATORS
-
-	request, err := http.NewRequest("GET", url, nil)
+func (h *Handler) Operators(r *http.Request) (interface{}, error) {
+	if h.API == nil {
+		return nil, api.ErrUnknown
+	}
+	data, err := h.API.Operators(r.Context())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	request = request.WithContext(ctx)
-
-	rt := WithHeader(client.Transport)
-	rt.Set("Host", API_HOST)
-	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, 0))
-	client.Transport = rt
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return "", err
-	}
-
-	defer func() {
-		err2 := resp.Body.Close()
-		if err2 != nil {
-			log.Println(err2)
-		}
-	}()
-
-	// log.Printf("%#v", resp)
-
-	if body, err = ReadResponseBody(resp); err != nil {
-		return "", err
-	}
-
-	return string(body), nil
+	return data, nil
 }
 
 // OperatorsHandler ...
 func (h *Handler) OperatorsHandler(w http.ResponseWriter, r *http.Request) {
-	// log.Println("/operators")
-
-	data, err := h.Operators()
-	if err != nil {
-		data = err.Error()
-		log.Println("operatorsHandler", err.Error())
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-
-	if _, err := w.Write([]byte(data)); err != nil {
-		log.Println("operatorsHandler", err.Error())
+	data, err := h.Operators(r)
+	if err != nil {
+		if se := api.StatusFromError(err); se != http.StatusBadGateway {
+			w.WriteHeader(se)
+		}
+		b, _ := json.Marshal(map[string]string{"error": err.Error()})
+		w.Write(b)
+		return
+	}
+	b, _ := json.Marshal(data)
+	if _, err := w.Write(b); err != nil {
+		log.Println("operatorsHandler write", err)
 	}
 }

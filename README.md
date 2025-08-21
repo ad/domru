@@ -78,7 +78,7 @@ Feel free to **file a new issue** with a respective title and description on the
 
 ## ✅&nbsp; Requirements
 
-Requires a **Go version higher or equal to 1.11**.
+Requires a **Go version higher or equal to 1.24**.
 
 ## 📘&nbsp; License
 

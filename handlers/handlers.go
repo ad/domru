@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ad/domru/config"
+	"github.com/ad/domru/internal/api"
 )
 
 type Handler struct {
@@ -16,12 +17,14 @@ type Handler struct {
 	Account      *Account
 
 	TemplateFs embed.FS
+	API        *api.Wrapper
 }
 
-func NewHandlers(config *config.Config, templateFs embed.FS) (h *Handler) {
+func NewHandlers(config *config.Config, templateFs embed.FS, apiWrapper *api.Wrapper) (h *Handler) {
 	h = &Handler{
 		Config:     config,
 		TemplateFs: templateFs,
+		API:        apiWrapper,
 	}
 
 	return h

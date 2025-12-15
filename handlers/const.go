@@ -117,6 +117,56 @@ type HomePageData struct {
 	Cameras       Cameras
 	Places        Places
 	Finances      Finances
+	
+	// Multi-account data
+	MultiAccountCameras  []MultiAccountCamera  `json:"multi_account_cameras,omitempty"`
+	MultiAccountPlaces   []MultiAccountPlace   `json:"multi_account_places,omitempty"`
+	MultiAccountFinances []MultiAccountFinance `json:"multi_account_finances,omitempty"`
+	IsMultiAccount       bool                  `json:"is_multi_account"`
+}
+
+// MultiAccountCamera represents a camera with account information for templates
+type MultiAccountCamera struct {
+	ID          int    `json:"ID"`
+	Name        string `json:"Name"`
+	IsActive    int    `json:"IsActive"`
+	AccountID   string `json:"account_id"`
+	AccountName string `json:"account_name"`
+}
+
+// MultiAccountPlace represents a place with account information for templates
+type MultiAccountPlace struct {
+	ID    int `json:"id"`
+	Place struct {
+		ID      int `json:"id"`
+		Address struct {
+			VisibleAddress string `json:"visibleAddress"`
+		} `json:"address"`
+		AccessControls []struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		} `json:"accessControls"`
+	} `json:"place"`
+	Subscriber struct {
+		ID        int    `json:"id"`
+		Name      string `json:"name"`
+		AccountID string `json:"accountId"`
+	} `json:"subscriber"`
+	Blocked     bool   `json:"blocked"`
+	AccountID   string `json:"account_id"`
+	AccountName string `json:"account_name"`
+}
+
+// MultiAccountFinance represents finances with account information for templates
+type MultiAccountFinance struct {
+	Balance     float64 `json:"balance"`
+	BlockType   string  `json:"blockType"`
+	AmountSum   float64 `json:"amountSum"`
+	TargetDate  string  `json:"targetDate"`
+	PaymentLink string  `json:"paymentLink"`
+	Blocked     bool    `json:"blocked"`
+	AccountID   string  `json:"account_id"`
+	AccountName string  `json:"account_name"`
 }
 
 type HAConfig struct {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -68,14 +69,37 @@ func (h *Handler) Cameras() (string, error) {
 func (h *Handler) CamerasHandler(w http.ResponseWriter, r *http.Request) {
 	// log.Println("/camerasHandler")
 
-	data, err := h.Cameras()
-	if err != nil {
-		log.Println("camerasHandler", err.Error())
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 
-	if _, err := w.Write([]byte(data)); err != nil {
-		log.Println("camerasHandler", err.Error())
+	// Check if we have multi-account support
+	if h.MultiAccountAggregator != nil {
+		// Multi-account mode: return aggregated cameras from all accounts
+		dataMerger := h.MultiAccountAggregator.GetDataMerger()
+		cameras, err := dataMerger.GetAggregatedCameras()
+		if err != nil {
+			log.Println("multi-account camerasHandler", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Convert to JSON and return
+		if jsonData, err := json.Marshal(cameras); err != nil {
+			log.Println("camerasHandler JSON marshal error", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			if _, err := w.Write(jsonData); err != nil {
+				log.Println("camerasHandler write error", err.Error())
+			}
+		}
+	} else {
+		// Legacy single-account mode
+		data, err := h.Cameras()
+		if err != nil {
+			log.Println("camerasHandler", err.Error())
+		}
+
+		if _, err := w.Write([]byte(data)); err != nil {
+			log.Println("camerasHandler", err.Error())
+		}
 	}
 }

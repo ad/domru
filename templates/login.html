@@ -149,7 +149,21 @@ figure {
 <body>
     <main id="wrapper">
         <figure>
-            <h1>Вход</h1>
+            <h1>Вход в систему</h1>
+            
+            <!-- Multi-account info -->
+            <div style="margin-bottom: 20px; padding: 15px; background-color: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 8px; text-align: left;">
+                <p style="margin: 8px 0; font-size: 0.85em; color: #333;">
+                    Теперь вы можете управлять несколькими аккаунтами домофонов одновременно!
+                </p>
+                <ul style="margin: 8px 0; padding-left: 20px; font-size: 0.8em; color: #666;">
+                    <li>Добавляйте несколько аккаунтов поочередно</li>
+                    <li>Просматривайте данные от всех аккаунтов в одном интерфейсе</li>
+                    <li>Четкая группировка по аккаунтам</li>
+                    <li>Индикаторы статуса для каждого аккаунта</li>
+                </ul>
+            </div>
+
             <form action="{{ .HassioIngress }}/login" method="post">
                 <div class="group">      
                     <input type="text" required name="phone" value="{{ .Phone }}" placeholder="79991112233">

@@ -51,6 +51,52 @@ body {
 pre {
     text-align: left;
 }
+
+/* Multi-account styles */
+.account-group {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #fafafa;
+}
+
+.account-status-section, .cameras-section, .places-section, .config-section {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.account-status-section h3, .cameras-section h3, .places-section h3, .config-section h3 {
+    margin-top: 0;
+    color: #5b5983;
+    border-bottom: 2px solid #5b5983;
+    padding-bottom: 5px;
+}
+
+.account-group h4 {
+    margin: 0 0 10px 0;
+    border-radius: 5px;
+    font-size: 1.1em;
+}
+
+.account-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.account-success {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
     </style>
 </head>
 <body>
@@ -60,53 +106,184 @@ pre {
                 {{ .LoginError }}
             </div>
         {{ else }}
-        <div class="resp-table">
-            <div class="resp-table-body">
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Номер телефона:</div>
-                    <div class="table-body-cell">+{{ .Phone }}</div>
+        
+        {{ if .IsMultiAccount }}
+            <!-- Multi-account interface -->
+            <h2>Мульти-аккаунт режим</h2>
+            
+            <!-- Account status indicators -->
+            <div class="account-status-section">
+                <h3>Статус аккаунтов</h3>
+                <div class="resp-table">
+                    <div class="resp-table-body">
+                        {{ range .MultiAccountFinances }}
+                        <div class="resp-table-row">
+                            <div class="table-body-cell"><strong>{{ .AccountName }}</strong></div>
+                            <div class="table-body-cell">
+                                {{ if .Blocked }}
+                                    <span style="color: red;">❌ Заблокирован</span>
+                                {{ else }}
+                                    <span style="color: green;">✅ Активен</span>
+                                {{ end }}
+                            </div>
+                            <div class="table-body-cell">Баланс: {{ .Balance }}₽</div>
+                            <div class="table-body-cell">{{ .BlockType }}</div>
+                        </div>
+                        {{ end }}
+                    </div>
                 </div>
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Токен доступа:</div>
-                    <div class="table-body-cell">{{ .Token }}</div>
-                </div>
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Токен&nbsp;обновления:</div>
-                    <div class="table-body-cell">{{ .RefreshToken }}</div>
-                </div>
-                {{ with .Finances }}
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Статус:</div>
-                    <div class="table-body-cell">{{ .BlockType }}</div>
-                </div>
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Баланс:</div>
-                    <div class="table-body-cell">{{ .Balance }}₽</div>
-                </div>
+            </div>
+
+            <!-- Multi-account cameras grouped by account -->
+            {{ if .MultiAccountCameras }}
+            <div class="cameras-section">
+                <h3>Камеры по аккаунтам</h3>
+                {{ $currentAccount := "" }}
+                {{ range .MultiAccountCameras }}
+                    {{ if ne .AccountName $currentAccount }}
+                        {{ if ne $currentAccount "" }}</div>{{ end }}
+                        <div class="account-group">
+                            <h4 style="background-color: #f0f0f0; padding: 10px; margin: 10px 0;">📹 {{ .AccountName }}</h4>
+                        {{ $currentAccount = .AccountName }}
+                    {{ end }}
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Камера {{ .ID }}:</div>
+                        <div class="table-body-cell">{{ .Name }}</div>
+                        <div class="table-body-cell">
+                            {{ if eq .IsActive 1 }}
+                                <span style="color: green;">🟢 Активна</span>
+                            {{ else }}
+                                <span style="color: red;">🔴 Неактивна</span>
+                            {{ end }}
+                        </div>
+                        <div class="table-body-cell">
+                            <small style="color: #666;">Аккаунт: {{ .AccountName }}</small>
+                        </div>
+                    </div>
                 {{ end }}
-                {{ with .Places.Data }}
-                    {{ range $index, $element := . }}
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Адрес:</div>
-                    <div class="table-body-cell">
-                        {{ (index $element.Place.AccessControls 0).Name }}
-                        <button onclick="fetch('http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}'); return false;">Открыть</button>
+                {{ if ne $currentAccount "" }}</div>{{ end }}
+            </div>
+            {{ end }}
+
+            <!-- Multi-account places grouped by account -->
+            {{ if .MultiAccountPlaces }}
+            <div class="places-section">
+                <h3>Адреса по аккаунтам</h3>
+                {{ $currentAccount := "" }}
+                {{ range .MultiAccountPlaces }}
+                    {{ if ne .AccountName $currentAccount }}
+                        {{ if ne $currentAccount "" }}</div>{{ end }}
+                        <div class="account-group">
+                            <h4 style="background-color: #f0f0f0; padding: 10px; margin: 10px 0;">🏠 {{ .AccountName }}</h4>
+                        {{ $currentAccount = .AccountName }}
+                    {{ end }}
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Адрес:</div>
+                        <div class="table-body-cell">
+                            {{ (index .Place.AccessControls 0).Name }}
+                            <button onclick="fetch('http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ .Place.ID }}&accessControlID={{ (index .Place.AccessControls 0).ID }}'); return false;">Открыть</button>
+                        </div>
+                        <div class="table-body-cell">
+                            <small style="color: #666;">Аккаунт: {{ .AccountName }}</small>
+                        </div>
                     </div>
-                </div>
-                <div class="resp-table-row">
-                    <div class="table-body-cell">Видеопоток:</div>
-                    <div class="table-body-cell">http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}</div>
-                </div>
-                <div class="resp-table-row">
-                    <div class="table-body-cell"></div>
-                    <div class="table-body-cell">
-                        <img src="{{ $.HassioIngress }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}" alt="Камера" width="320">
-                    </div>
-                </div>
+                    {{ if $.MultiAccountCameras }}
+                        {{ range $.MultiAccountCameras }}
+                            {{ if eq .AccountID $currentAccount }}
+                            <div class="resp-table-row">
+                                <div class="table-body-cell">Видеопоток:</div>
+                                <div class="table-body-cell">http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ .ID }}</div>
+                            </div>
+                            <div class="resp-table-row">
+                                <div class="table-body-cell"></div>
+                                <div class="table-body-cell">
+                                    <img src="{{ $.HassioIngress }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}" alt="Камера {{ .Name }}" width="320">
+                                </div>
+                            </div>
+                            {{ break }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
+                {{ end }}
+                {{ if ne $currentAccount "" }}</div>{{ end }}
+            </div>
+            {{ end }}
+
+            <!-- Home Assistant configuration for multi-account -->
+            <div class="config-section">
+                <h3>Конфигурация Home Assistant</h3>
                 <div class="resp-table-row">
                     <div class="table-body-cell"></div>
                     <div class="table-body-cell">
                         <pre>
+# Мульти-аккаунт конфигурация
+rest_command:
+{{ range .MultiAccountPlaces }}
+    domru_open_door_{{ .AccountID }}_{{ .Place.ID }}:
+        url: http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ .Place.ID }}&accessControlID={{ (index .Place.AccessControls 0).ID }}
+{{ end }}
+
+camera:
+{{ range .MultiAccountCameras }}
+    - platform: generic
+        name: domofon_{{ .AccountID }}_{{ .ID }}
+        still_image_url: http://{{ $.HostIP }}:{{ $.Port }}/snapshot?placeID={{ .ID }}&accessControlID=1
+        stream_source: http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ .ID }}
+{{ end }}
+                        </pre>
+                    </div>
+                </div>
+            </div>
+
+        {{ else }}
+            <!-- Legacy single-account interface -->
+            <div class="resp-table">
+                <div class="resp-table-body">
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Номер телефона:</div>
+                        <div class="table-body-cell">+{{ .Phone }}</div>
+                    </div>
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Токен доступа:</div>
+                        <div class="table-body-cell">{{ .Token }}</div>
+                    </div>
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Токен&nbsp;обновления:</div>
+                        <div class="table-body-cell">{{ .RefreshToken }}</div>
+                    </div>
+                    {{ with .Finances }}
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Статус:</div>
+                        <div class="table-body-cell">{{ .BlockType }}</div>
+                    </div>
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Баланс:</div>
+                        <div class="table-body-cell">{{ .Balance }}₽</div>
+                    </div>
+                    {{ end }}
+                    {{ with .Places.Data }}
+                        {{ range $index, $element := . }}
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Адрес:</div>
+                        <div class="table-body-cell">
+                            {{ (index $element.Place.AccessControls 0).Name }}
+                            <button onclick="fetch('http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}'); return false;">Открыть</button>
+                        </div>
+                    </div>
+                    <div class="resp-table-row">
+                        <div class="table-body-cell">Видеопоток:</div>
+                        <div class="table-body-cell">http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}</div>
+                    </div>
+                    <div class="resp-table-row">
+                        <div class="table-body-cell"></div>
+                        <div class="table-body-cell">
+                            <img src="{{ $.HassioIngress }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}" alt="Камера" width="320">
+                        </div>
+                    </div>
+                    <div class="resp-table-row">
+                        <div class="table-body-cell"></div>
+                        <div class="table-body-cell">
+                            <pre>
 rest_command:
     domru_open_door:
         url: http://{{ $.HostIP }}:{{ $.Port }}/door?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}
@@ -116,13 +293,14 @@ camera:
         name: domofon
         still_image_url: http://{{ $.HostIP }}:{{ $.Port }}/snapshot?placeID={{ $element.Place.ID }}&accessControlID={{ (index $element.Place.AccessControls 0).ID }}
         stream_source: http://{{ $.HostIP }}:{{ $.Port }}/stream?cameraID={{ (index $.Cameras.Data 0).ID }}
-                        </pre>
+                            </pre>
+                        </div>
                     </div>
+                        {{ end }}        
+                    {{ end }}
                 </div>
-                    {{ end }}        
-                {{ end }}
             </div>
-        </div>
+        {{ end }}
         {{ end }}
     </main>
 </body>

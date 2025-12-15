@@ -151,23 +151,40 @@ figure {
         <figure>
             <h1>{{ .Phone }}</h1>
             <div class="alert alert-danger">{{ .LoginError }}</div>
-            <ul style="padding-left: 0;">
-                {{ with .Accounts }}
-                    {{ range $index, $element := . }}
-                        {{ if $element.AccountID }}
-                        <a href="{{ $.HassioIngress }}/login/address?phone={{ $.Phone }}&index={{ $index }}" class="text-decoration-none">
-                            <li style="list-style: none; text-align: left">
-                                <div class="group">
-                                    <strong>Договор: {{ $element.AccountID }}</strong>
-                                    <small>(Регион: {{ $element.OperatorID }})</small>
-                                    <p>Адрес: {{ $element.Address }}</p>
-                                </div>
-                            </li>
-                        </a>
-                        {{ end }}
-                    {{ end }} 
-                {{ end }}
-            </ul>
+            <!-- Existing accounts selection -->
+            <div class="accounts-section">
+                <h3>Выберите аккаунт для добавления:</h3>
+                <ul style="padding-left: 0;">
+                    {{ with .Accounts }}
+                        {{ range $index, $element := . }}
+                            {{ if $element.AccountID }}
+                            <a href="{{ $.HassioIngress }}/login/address?phone={{ $.Phone }}&index={{ $index }}" class="text-decoration-none">
+                                <li style="list-style: none; text-align: left; margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+                                    <div class="group">
+                                        <strong>📋 Договор: {{ $element.AccountID }}</strong>
+                                        <small style="color: #666;">(Регион: {{ $element.OperatorID }})</small>
+                                        <p style="margin: 5px 0; color: #333;">🏠 Адрес: {{ $element.Address }}</p>
+                                        <small style="color: #888;">Нажмите для добавления этого аккаунта</small>
+                                    </div>
+                                </li>
+                            </a>
+                            {{ end }}
+                        {{ end }} 
+                    {{ end }}
+                </ul>
+            </div>
+
+            <!-- Multi-account management info -->
+            <div class="multi-account-info" style="margin-top: 30px; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 8px;">
+                <h4 style="margin-top: 0; color: #0066cc;">ℹ️ Мульти-аккаунт режим</h4>
+                <p style="margin: 10px 0; font-size: 0.9em; color: #333;">
+                    Вы можете добавить несколько аккаунтов для одновременного управления всеми домофонами. 
+                    После добавления аккаунта вы сможете видеть данные от всех подключенных аккаунтов в одном интерфейсе.
+                </p>
+                <p style="margin: 10px 0; font-size: 0.9em; color: #666;">
+                    <strong>Совет:</strong> Каждый аккаунт будет четко помечен в интерфейсе для удобства управления.
+                </p>
+            </div>
         </figure>
     </main>
 </body>

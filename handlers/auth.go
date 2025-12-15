@@ -9,7 +9,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/ad/domru/multiconfig"
 )
 
 // LoginHandler ...
@@ -173,9 +176,21 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	ingressPath := r.Header.Get("X-Ingress-Path")
 	// log.Println(r.Method, "/", ingressPath)
 
-	if h.Config.Token == "" || h.Config.RefreshToken == "" {
-		http.Redirect(w, r, ingressPath+"/login", http.StatusSeeOther)
-		return
+	// Check if we have multi-account support
+	isMultiAccount := h.MultiAccountAggregator != nil
+
+	// For multi-account, check if we have any accounts
+	if isMultiAccount {
+		if !h.LegacyAdapter.HasPrimaryAccount() {
+			http.Redirect(w, r, ingressPath+"/login", http.StatusSeeOther)
+			return
+		}
+	} else {
+		// Legacy single-account check
+		if h.Config.Token == "" || h.Config.RefreshToken == "" {
+			http.Redirect(w, r, ingressPath+"/login", http.StatusSeeOther)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html")
@@ -189,32 +204,108 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var cameras Cameras
+	var places Places
+	var finances *Finances
 
-	if loginError == "" {
-		camerasData, err := h.Cameras()
-		if err != nil {
-			loginError = "cameras (" + camerasData + ") got " + err.Error()
-		} else {
-			if err := json.Unmarshal([]byte(camerasData), &cameras); err != nil {
-				loginError = "cameras (" + camerasData + ") Unmarshal got " + err.Error()
+	// Multi-account data
+	var multiAccountCameras []MultiAccountCamera
+	var multiAccountPlaces []MultiAccountPlace
+	var multiAccountFinances []MultiAccountFinance
+
+	if isMultiAccount {
+		// Get aggregated data from all accounts
+		dataMerger := h.MultiAccountAggregator.GetDataMerger()
+
+		// Get cameras from all accounts
+		if aggCameras, err := dataMerger.GetAggregatedCameras(); err == nil {
+			for _, camera := range aggCameras {
+				multiAccountCameras = append(multiAccountCameras, MultiAccountCamera{
+					ID:          camera.ID,
+					Name:        camera.Name,
+					IsActive:    camera.IsActive,
+					AccountID:   camera.AccountID,
+					AccountName: camera.AccountName,
+				})
 			}
+		} else {
+			loginError = "multi-account cameras error: " + err.Error()
+		}
+
+		// Get places from all accounts
+		if aggPlaces, err := dataMerger.GetAggregatedPlaces(); err == nil {
+			for _, place := range aggPlaces {
+				multiAccountPlaces = append(multiAccountPlaces, MultiAccountPlace{
+					ID:          place.ID,
+					Place:       place.Place,
+					Subscriber:  place.Subscriber,
+					Blocked:     place.Blocked,
+					AccountID:   place.AccountID,
+					AccountName: place.AccountName,
+				})
+			}
+		} else {
+			loginError = "multi-account places error: " + err.Error()
+		}
+
+		// Get finances from all accounts
+		if aggFinances, err := dataMerger.GetAggregatedFinances(); err == nil {
+			for _, finance := range aggFinances {
+				multiAccountFinances = append(multiAccountFinances, MultiAccountFinance{
+					Balance:     finance.Balance,
+					BlockType:   finance.BlockType,
+					AmountSum:   finance.AmountSum,
+					TargetDate:  finance.TargetDate,
+					PaymentLink: finance.PaymentLink,
+					Blocked:     finance.Blocked,
+					AccountID:   finance.AccountID,
+					AccountName: finance.AccountName,
+				})
+			}
+		} else {
+			loginError = "multi-account finances error: " + err.Error()
+		}
+
+		// For backward compatibility, also populate single-account data from primary account
+		if primaryConfig, err := h.LegacyAdapter.GetPrimaryConfig(); err == nil {
+			h.Config = primaryConfig // Update current config
 		}
 	}
 
-	var places Places
+	// Get single-account data (for backward compatibility or single-account mode)
+	if loginError == "" {
+		camerasData, err := h.Cameras()
+		if err != nil {
+			if !isMultiAccount {
+				loginError = "cameras (" + camerasData + ") got " + err.Error()
+			}
+		} else {
+			if err := json.Unmarshal([]byte(camerasData), &cameras); err != nil {
+				if !isMultiAccount {
+					loginError = "cameras (" + camerasData + ") Unmarshal got " + err.Error()
+				}
+			}
+		}
+	}
 
 	if loginError == "" {
 		placesData, err := h.Places()
 		if err != nil {
-			loginError = "places (" + placesData + ") got " + err.Error()
+			if !isMultiAccount {
+				loginError = "places (" + placesData + ") got " + err.Error()
+			}
 		} else {
 			if err := json.Unmarshal([]byte(placesData), &places); err != nil {
-				loginError = "places (" + placesData + ") Unmarshal got " + err.Error()
+				if !isMultiAccount {
+					loginError = "places (" + placesData + ") Unmarshal got " + err.Error()
+				}
 			}
 		}
 	}
 
-	finances, _ := h.GetFinances()
+	finances, _ = h.GetFinances()
+	if finances == nil {
+		finances = &Finances{}
+	}
 
 	data := HomePageData{
 		HassioIngress: ingressPath,
@@ -227,6 +318,12 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		Cameras:       cameras,
 		Places:        places,
 		Finances:      *finances,
+		
+		// Multi-account data
+		MultiAccountCameras:  multiAccountCameras,
+		MultiAccountPlaces:   multiAccountPlaces,
+		MultiAccountFinances: multiAccountFinances,
+		IsMultiAccount:       isMultiAccount,
 	}
 
 	var tmpl []byte
@@ -483,6 +580,380 @@ func (h *Handler) AccountsHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(b); err != nil {
 		log.Println("accountsHandler", err.Error())
 	}
+}
+
+// MultiAccountsHandler handles listing all accounts in multi-account mode
+func (h *Handler) MultiAccountsHandler(w http.ResponseWriter, r *http.Request) {
+	// Only work in multi-account mode
+	if h.MultiAccountAggregator == nil {
+		http.Error(w, "Multi-account mode not enabled", http.StatusServiceUnavailable)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		h.handleListAccounts(w, r)
+	case http.MethodPost:
+		h.handleAddAccount(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// AccountByIDHandler handles operations on specific accounts
+func (h *Handler) AccountByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Only work in multi-account mode
+	if h.MultiAccountAggregator == nil {
+		http.Error(w, "Multi-account mode not enabled", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Extract account ID from URL path
+	path := r.URL.Path
+	// Expected format: /accounts/{id} or /accounts/{id}/action
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 || parts[0] != "accounts" {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+
+	accountID := parts[1]
+	if accountID == "" {
+		http.Error(w, "Account ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Check for specific actions
+	if len(parts) >= 3 {
+		action := parts[2]
+		switch action {
+		case "enable":
+			h.handleEnableAccount(w, r, accountID)
+		case "disable":
+			h.handleDisableAccount(w, r, accountID)
+		default:
+			http.Error(w, "Unknown action", http.StatusBadRequest)
+		}
+		return
+	}
+
+	// Handle basic CRUD operations
+	switch r.Method {
+	case http.MethodGet:
+		h.handleGetAccount(w, r, accountID)
+	case http.MethodPut:
+		h.handleUpdateAccount(w, r, accountID)
+	case http.MethodDelete:
+		h.handleDeleteAccount(w, r, accountID)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// handleListAccounts returns all accounts
+func (h *Handler) handleListAccounts(w http.ResponseWriter, r *http.Request) {
+	accounts := h.MultiAccountAggregator.GetAccounts()
+	
+	// Convert to response format (without sensitive tokens)
+	type AccountResponse struct {
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Login   int    `json:"login"`
+		UUID    string `json:"uuid"`
+		Enabled bool   `json:"enabled"`
+	}
+
+	response := make([]AccountResponse, 0, len(accounts))
+	for _, account := range accounts {
+		response = append(response, AccountResponse{
+			ID:      account.ID,
+			Name:    account.Name,
+			Login:   account.Login,
+			UUID:    account.UUID,
+			Enabled: account.Enabled,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode accounts response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// handleAddAccount adds a new account
+func (h *Handler) handleAddAccount(w http.ResponseWriter, r *http.Request) {
+	type AddAccountRequest struct {
+		Name         string `json:"name"`
+		Login        int    `json:"login"`
+		Token        string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
+		UUID         string `json:"uuid"`
+		Operator     int    `json:"operator"`
+		Enabled      bool   `json:"enabled"`
+	}
+
+	var req AddAccountRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Login == 0 {
+		http.Error(w, "Login is required", http.StatusBadRequest)
+		return
+	}
+	if req.UUID == "" {
+		http.Error(w, "UUID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Create new account
+	account := &multiconfig.AccountConfig{
+		Name:         req.Name,
+		Login:        req.Login,
+		Token:        req.Token,
+		RefreshToken: req.RefreshToken,
+		UUID:         req.UUID,
+		Operator:     req.Operator,
+		Enabled:      req.Enabled,
+	}
+
+	// Add account
+	if err := h.MultiAccountAggregator.AddAccount(account); err != nil {
+		log.Printf("Failed to add account: %v", err)
+		http.Error(w, "Failed to add account", http.StatusInternalServerError)
+		return
+	}
+
+	// Return created account (without sensitive tokens)
+	type AccountResponse struct {
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Login   int    `json:"login"`
+		UUID    string `json:"uuid"`
+		Enabled bool   `json:"enabled"`
+	}
+
+	response := AccountResponse{
+		ID:      account.ID,
+		Name:    account.Name,
+		Login:   account.Login,
+		UUID:    account.UUID,
+		Enabled: account.Enabled,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode account response: %v", err)
+	}
+}
+
+// handleGetAccount returns a specific account
+func (h *Handler) handleGetAccount(w http.ResponseWriter, r *http.Request, accountID string) {
+	account, err := h.MultiAccountAggregator.GetAccount(accountID)
+	if err != nil {
+		http.Error(w, "Account not found", http.StatusNotFound)
+		return
+	}
+
+	// Return account (without sensitive tokens)
+	type AccountResponse struct {
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Login   int    `json:"login"`
+		UUID    string `json:"uuid"`
+		Enabled bool   `json:"enabled"`
+	}
+
+	response := AccountResponse{
+		ID:      account.ID,
+		Name:    account.Name,
+		Login:   account.Login,
+		UUID:    account.UUID,
+		Enabled: account.Enabled,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode account response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// handleUpdateAccount updates an existing account
+func (h *Handler) handleUpdateAccount(w http.ResponseWriter, r *http.Request, accountID string) {
+	// Check if account exists
+	existingAccount, err := h.MultiAccountAggregator.GetAccount(accountID)
+	if err != nil {
+		http.Error(w, "Account not found", http.StatusNotFound)
+		return
+	}
+
+	type UpdateAccountRequest struct {
+		Name         *string `json:"name,omitempty"`
+		Token        *string `json:"token,omitempty"`
+		RefreshToken *string `json:"refresh_token,omitempty"`
+		Enabled      *bool   `json:"enabled,omitempty"`
+	}
+
+	var req UpdateAccountRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Update fields if provided
+	updated := false
+	if req.Name != nil && *req.Name != existingAccount.Name {
+		// Update name by removing and re-adding account with new name
+		updatedAccount := *existingAccount
+		updatedAccount.Name = *req.Name
+		
+		if err := h.MultiAccountAggregator.RemoveAccount(accountID); err != nil {
+			log.Printf("Failed to remove account for name update: %v", err)
+			http.Error(w, "Failed to update account", http.StatusInternalServerError)
+			return
+		}
+		
+		if err := h.MultiAccountAggregator.AddAccount(&updatedAccount); err != nil {
+			log.Printf("Failed to re-add account after name update: %v", err)
+			http.Error(w, "Failed to update account", http.StatusInternalServerError)
+			return
+		}
+		updated = true
+	}
+
+	if req.Token != nil || req.RefreshToken != nil {
+		token := existingAccount.Token
+		refreshToken := existingAccount.RefreshToken
+		
+		if req.Token != nil {
+			token = *req.Token
+		}
+		if req.RefreshToken != nil {
+			refreshToken = *req.RefreshToken
+		}
+		
+		if err := h.MultiAccountAggregator.UpdateAccountTokens(accountID, token, refreshToken); err != nil {
+			log.Printf("Failed to update account tokens: %v", err)
+			http.Error(w, "Failed to update account tokens", http.StatusInternalServerError)
+			return
+		}
+		updated = true
+	}
+
+	if req.Enabled != nil {
+		if *req.Enabled != existingAccount.Enabled {
+			if *req.Enabled {
+				if err := h.MultiAccountAggregator.EnableAccount(accountID); err != nil {
+					log.Printf("Failed to enable account: %v", err)
+					http.Error(w, "Failed to enable account", http.StatusInternalServerError)
+					return
+				}
+			} else {
+				if err := h.MultiAccountAggregator.DisableAccount(accountID); err != nil {
+					log.Printf("Failed to disable account: %v", err)
+					http.Error(w, "Failed to disable account", http.StatusInternalServerError)
+					return
+				}
+			}
+			updated = true
+		}
+	}
+
+	if !updated {
+		http.Error(w, "No changes provided", http.StatusBadRequest)
+		return
+	}
+
+	// Return updated account
+	updatedAccount, err := h.MultiAccountAggregator.GetAccount(accountID)
+	if err != nil {
+		log.Printf("Failed to get updated account: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	type AccountResponse struct {
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Login   int    `json:"login"`
+		UUID    string `json:"uuid"`
+		Enabled bool   `json:"enabled"`
+	}
+
+	response := AccountResponse{
+		ID:      updatedAccount.ID,
+		Name:    updatedAccount.Name,
+		Login:   updatedAccount.Login,
+		UUID:    updatedAccount.UUID,
+		Enabled: updatedAccount.Enabled,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode account response: %v", err)
+	}
+}
+
+// handleDeleteAccount deletes an account
+func (h *Handler) handleDeleteAccount(w http.ResponseWriter, r *http.Request, accountID string) {
+	if err := h.MultiAccountAggregator.RemoveAccount(accountID); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Account not found", http.StatusNotFound)
+		} else {
+			log.Printf("Failed to delete account: %v", err)
+			http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleEnableAccount enables an account
+func (h *Handler) handleEnableAccount(w http.ResponseWriter, r *http.Request, accountID string) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := h.MultiAccountAggregator.EnableAccount(accountID); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Account not found", http.StatusNotFound)
+		} else {
+			log.Printf("Failed to enable account: %v", err)
+			http.Error(w, "Failed to enable account", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "enabled"}`))
+}
+
+// handleDisableAccount disables an account
+func (h *Handler) handleDisableAccount(w http.ResponseWriter, r *http.Request, accountID string) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := h.MultiAccountAggregator.DisableAccount(accountID); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Account not found", http.StatusNotFound)
+		} else {
+			log.Printf("Failed to disable account: %v", err)
+			http.Error(w, "Failed to disable account", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "disabled"}`))
 }
 
 // LoginSMSHandler ...

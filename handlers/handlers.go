@@ -8,12 +8,17 @@ import (
 	"strings"
 
 	"github.com/ad/domru/config"
+	"github.com/ad/domru/multiconfig"
 )
 
 type Handler struct {
 	Config       *config.Config
 	UserAccounts []Account
 	Account      *Account
+
+	// Multi-account support
+	MultiAccountAggregator *multiconfig.MultiAccountAggregator
+	LegacyAdapter         *multiconfig.LegacyConfigAdapter
 
 	TemplateFs embed.FS
 }
@@ -22,6 +27,27 @@ func NewHandlers(config *config.Config, templateFs embed.FS) (h *Handler) {
 	h = &Handler{
 		Config:     config,
 		TemplateFs: templateFs,
+	}
+
+	return h
+}
+
+// NewMultiAccountHandlers creates a new handler with multi-account support
+func NewMultiAccountHandlers(aggregator *multiconfig.MultiAccountAggregator, templateFs embed.FS) (h *Handler) {
+	legacyAdapter := multiconfig.NewLegacyConfigAdapter(aggregator)
+	
+	// Get primary config for backward compatibility
+	primaryConfig, err := legacyAdapter.GetPrimaryConfig()
+	if err != nil {
+		// Create empty config if no primary account exists
+		primaryConfig = &config.Config{Port: 18000}
+	}
+
+	h = &Handler{
+		Config:                 primaryConfig,
+		MultiAccountAggregator: aggregator,
+		LegacyAdapter:         legacyAdapter,
+		TemplateFs:            templateFs,
 	}
 
 	return h

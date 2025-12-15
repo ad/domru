@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -66,15 +67,38 @@ func (h *Handler) Places() (string, error) {
 func (h *Handler) PlacesHandler(w http.ResponseWriter, r *http.Request) {
 	// log.Println("/placesHandler")
 
-	data, err := h.Places()
-	if err != nil {
-		data = err.Error()
-		log.Println("placesHandler", err.Error())
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 
-	if _, err := w.Write([]byte(data)); err != nil {
-		log.Println("placesHandler", err.Error())
+	// Check if we have multi-account support
+	if h.MultiAccountAggregator != nil {
+		// Multi-account mode: return aggregated places from all accounts
+		dataMerger := h.MultiAccountAggregator.GetDataMerger()
+		places, err := dataMerger.GetAggregatedPlaces()
+		if err != nil {
+			log.Println("multi-account placesHandler", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Convert to JSON and return
+		if jsonData, err := json.Marshal(places); err != nil {
+			log.Println("placesHandler JSON marshal error", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			if _, err := w.Write(jsonData); err != nil {
+				log.Println("placesHandler write error", err.Error())
+			}
+		}
+	} else {
+		// Legacy single-account mode
+		data, err := h.Places()
+		if err != nil {
+			data = err.Error()
+			log.Println("placesHandler", err.Error())
+		}
+
+		if _, err := w.Write([]byte(data)); err != nil {
+			log.Println("placesHandler", err.Error())
+		}
 	}
 }

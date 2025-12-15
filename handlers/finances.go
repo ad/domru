@@ -75,15 +75,38 @@ func (h *Handler) Finances() ([]byte, error) {
 func (h *Handler) FinancesHandler(w http.ResponseWriter, r *http.Request) {
 	// log.Println("/financesHandler")
 
-	data, err := h.Finances()
-	if err != nil {
-		log.Println("financesHandler", err.Error())
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 
-	if _, err := w.Write(data); err != nil {
-		log.Println("financesHandler", err.Error())
+	// Check if we have multi-account support
+	if h.MultiAccountAggregator != nil {
+		// Multi-account mode: return aggregated finances from all accounts
+		dataMerger := h.MultiAccountAggregator.GetDataMerger()
+		finances, err := dataMerger.GetAggregatedFinances()
+		if err != nil {
+			log.Println("multi-account financesHandler", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Convert to JSON and return
+		if jsonData, err := json.Marshal(finances); err != nil {
+			log.Println("financesHandler JSON marshal error", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			if _, err := w.Write(jsonData); err != nil {
+				log.Println("financesHandler write error", err.Error())
+			}
+		}
+	} else {
+		// Legacy single-account mode
+		data, err := h.Finances()
+		if err != nil {
+			log.Println("financesHandler", err.Error())
+		}
+
+		if _, err := w.Write(data); err != nil {
+			log.Println("financesHandler", err.Error())
+		}
 	}
 }
 

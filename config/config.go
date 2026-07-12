@@ -23,6 +23,16 @@ type Config struct {
 	UUID         string `json:"uuid"`
 }
 
+// Interface helpers for new auth layer
+func (c *Config) GetRefreshToken() string { return c.RefreshToken }
+func (c *Config) GetOperatorID() int      { return c.Operator }
+func (c *Config) GetUUID() string         { return c.UUID }
+func (c *Config) SetTokens(access, refresh string) error {
+	c.Token = access
+	c.RefreshToken = refresh
+	return c.WriteConfig()
+}
+
 // InitConfig ...
 func InitConfig() *Config {
 	config := &Config{Port: 18000}

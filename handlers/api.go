@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ad/domru/internal/constants"
 )
 
 // HANetwork ...
@@ -28,7 +30,7 @@ func (h *Handler) HANetwork() (string, error) {
 		return "", fmt.Errorf("supervisor token not set")
 	}
 
-	url := API_HA_NETWORK
+	url := constants.HANetworkInfoURL
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {

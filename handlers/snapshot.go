@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	jpeg "image/jpeg"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
@@ -18,64 +16,33 @@ import (
 // SnapshotHandler ...
 func (h *Handler) SnapshotHandler(w http.ResponseWriter, r *http.Request) {
 	var (
-		body   []byte
-		err    error
-		client = http.DefaultClient
+		body []byte
+		err  error
 	)
 
 	query := r.URL.Query()
 	placeID := query.Get("placeID")
 	accessControlID := query.Get("accessControlID")
-
-	url := fmt.Sprintf(API_VIDEO_SNAPSHOT, placeID, accessControlID)
-	// log.Println("/snapshotHandler", url)
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Println("snapshotHandler", err)
-
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	request = request.WithContext(ctx)
-
-	operator := strconv.Itoa(h.Config.Operator)
-
-	// Конвертируем placeID из строки в int64
-	placeIDInt, _ := strconv.ParseInt(placeID, 10, 64)
-
-	rt := WithHeader(client.Transport)
-	rt.Set("Host", API_HOST)
-	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, placeIDInt))
-	rt.Set("Operator", operator)
-	rt.Set("Authorization", "Bearer "+h.Config.Token)
-	client.Transport = rt
-
-	resp, err := client.Do(request)
-	if err != nil {
-		log.Println("snapshotHandler", "connect error")
-
-		return
-	}
-
-	defer func() {
-		err2 := resp.Body.Close()
-		if err2 != nil {
-			log.Println(err2)
-		}
-	}()
-
-	body, err = ReadResponseBody(resp)
-
-	if err == nil {
-		contentType := http.DetectContentType(body)
-
-		if resp.StatusCode != 200 {
-			err = fmt.Errorf("wrong response, code: %d, result: %s", resp.StatusCode, string(body))
-		} else if contentType != "image/jpeg" {
-			err = fmt.Errorf("wrong response, code: %d, Content-Type: %s, result: %s", resp.StatusCode, contentType, string(body))
+	if placeID == "" || accessControlID == "" {
+		err = fmt.Errorf("provide placeID and accessControlID")
+	} else {
+		if h.API == nil {
+			err = fmt.Errorf("api not initialized")
+		} else {
+			bodyBytes, upstreamErr, e := h.API.Snapshot(r.Context(), placeID, accessControlID)
+			if e != nil {
+				err = e
+			} else if upstreamErr != nil {
+				err = fmt.Errorf("snapshot upstream status %d", upstreamErr.StatusCode)
+			} else {
+				body = bodyBytes
+			}
+			if err == nil {
+				ct := http.DetectContentType(body)
+				if ct != "image/jpeg" {
+					err = fmt.Errorf("wrong content-type: %s", ct)
+				}
+			}
 		}
 	}
 

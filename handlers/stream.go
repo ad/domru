@@ -22,6 +22,12 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 
 	query := r.URL.Query()
 	cameraID := query.Get("cameraID")
+	placeID := query.Get("placeID")
+
+	var placeIDInt int64
+	if placeID != "" {
+		placeIDInt, _ = strconv.ParseInt(placeID, 10, 64)
+	}
 
 	targetRawURL := fmt.Sprintf(API_CAMERA_GET_STREAM, cameraID)
 
@@ -42,7 +48,7 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 	rt := WithHeader(client.Transport)
 	rt.Set("Host", API_HOST)
 	rt.Set("Content-Type", "application/json; charset=UTF-8")
-	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, 0))
+	rt.Set("User-Agent", GenerateUserAgent(h.Config.Operator, h.Config.UUID, placeIDInt))
 	rt.Set("Operator", operator)
 	rt.Set("Authorization", "Bearer "+h.Config.Token)
 	client.Transport = rt

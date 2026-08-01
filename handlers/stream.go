@@ -22,17 +22,17 @@ func (h *Handler) Stream(r *http.Request) (string, error) {
 
 	query := r.URL.Query()
 	cameraID := query.Get("cameraID")
-	placeID := query.Get("placeID")
 
-	var placeIDInt int64
-	if placeID != "" {
-		placeIDInt, _ = strconv.ParseInt(placeID, 10, 64)
-	}
+	// Конвертируем placeID из строки в int64
+	placeIDInt, _ := strconv.ParseInt(query.Get("placeID"), 10, 64)
 
 	targetRawURL := fmt.Sprintf(API_CAMERA_GET_STREAM, cameraID)
 
 	targetURL, _ := url.Parse(targetRawURL)
-	targetURL.RawQuery = r.URL.RawQuery
+
+	// placeID нужен только для User-Agent, наверх его не передаём
+	query.Del("placeID")
+	targetURL.RawQuery = query.Encode()
 
 	request, err := http.NewRequest("GET", targetURL.String(), nil)
 	if err != nil {

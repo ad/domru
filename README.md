@@ -69,7 +69,7 @@ You can find docker image in packages section of this github repository or pull 
 | `/operators` | GET | Get operators list |
 | `/places` | GET | Get places list |
 | `/snapshot` | GET | Get snapshot by `placeID` and `accessControlID` |
-| `/stream` | GET | Get link to stream by `cameraID` |
+| `/stream` | GET | Get link to stream by `cameraID`, optionally `placeID` to select the entrance |
 
 
 ## 🤝&nbsp; Found a bug? Missing a specific feature?
